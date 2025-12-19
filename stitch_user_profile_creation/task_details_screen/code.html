@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Task Details Screen</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#a413ec",
+                        "primary-light": "#f3e6fb",
+                        "background-light": "#f7f6f8",
+                        "background-dark": "#1c1022",
+                        "surface": "#ffffff",
+                        "text-main": "#170d1b",
+                        "text-secondary": "#804c9a",
+                        "danger": "#ef4444",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"],
+                        "body": ["Public Sans", "sans-serif"]
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(164, 19, 236, 0.05)',
+                        'nav': '0 -4px 20px -2px rgba(0, 0, 0, 0.05)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-main antialiased selection:bg-primary selection:text-white">
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-hidden max-w-md mx-auto bg-background-light shadow-2xl">
+<!-- Header -->
+<header class="sticky top-0 z-30 flex items-center justify-between bg-background-light/90 px-4 py-3 backdrop-blur-md border-b border-gray-200/50">
+<button class="group flex size-10 items-center justify-center rounded-full active:bg-gray-200 transition-colors">
+<span class="material-symbols-outlined text-text-main transition-transform group-active:-translate-x-0.5">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold tracking-tight text-text-main">Task Details</h1>
+<button class="group flex size-10 items-center justify-center rounded-full active:bg-gray-200 transition-colors">
+<span class="material-symbols-outlined text-text-main">more_vert</span>
+</button>
+</header>
+<!-- Scrollable Content -->
+<main class="flex-1 overflow-y-auto px-5 pt-4 pb-48 scroll-smooth no-scrollbar">
+<!-- Meta Header -->
+<div class="mb-6">
+<div class="flex items-start justify-between mb-2">
+<div class="flex gap-2">
+<span class="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-1 text-xs font-semibold text-orange-700">
+<span class="material-symbols-outlined text-[14px]">pending</span>
+                            Pending Approval
+                        </span>
+<span class="inline-flex items-center gap-1 rounded-full bg-primary-light px-2.5 py-1 text-xs font-semibold text-primary">
+                            High Priority
+                        </span>
+</div>
+</div>
+<h2 class="text-2xl font-bold leading-tight text-text-main mb-2">Quarterly Compliance Audit &amp; Review</h2>
+<div class="flex items-center gap-2 text-sm text-text-secondary">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+<p>Created: Oct 12, 2023</p>
+<span class="text-gray-300">•</span>
+<p>ID: #TK-8829</p>
+</div>
+</div>
+<!-- Description Card -->
+<div class="bg-surface rounded-2xl p-5 shadow-soft mb-5 border border-gray-100">
+<h3 class="text-sm font-bold uppercase tracking-wider text-text-secondary mb-3">Description</h3>
+<p class="text-text-main leading-relaxed text-[15px]">
+                    Review the updated safety protocols and sign off on the new document repository standards. Ensure all team members have completed the mandatory training module before final submission.
+                </p>
+</div>
+<!-- Task Dates (One-Time Task Variant) -->
+<div class="grid grid-cols-2 gap-4 mb-5">
+<div class="bg-surface rounded-2xl p-4 shadow-soft border border-gray-100 flex flex-col gap-1">
+<span class="flex items-center gap-1 text-xs font-semibold text-text-secondary uppercase">
+<span class="material-symbols-outlined text-[16px]">play_circle</span> Start Date
+                    </span>
+<span class="text-base font-semibold text-text-main">Oct 14, 2023</span>
+</div>
+<div class="bg-surface rounded-2xl p-4 shadow-soft border border-gray-100 flex flex-col gap-1">
+<span class="flex items-center gap-1 text-xs font-semibold text-text-secondary uppercase">
+<span class="material-symbols-outlined text-[16px]">flag</span> Target Date
+                    </span>
+<span class="text-base font-semibold text-text-main">Oct 20, 2023</span>
+</div>
+<div class="col-span-2 bg-primary/5 rounded-2xl p-4 border border-primary/10 flex items-center justify-between">
+<div class="flex flex-col gap-1">
+<span class="flex items-center gap-1 text-xs font-bold text-primary uppercase">
+<span class="material-symbols-outlined text-[16px]">event_busy</span> Due Date
+                        </span>
+<span class="text-lg font-bold text-primary">Oct 22, 2023</span>
+</div>
+<div class="bg-surface rounded-lg px-3 py-1 text-xs font-medium text-primary shadow-sm">
+                        5 Days Left
+                    </div>
+</div>
+</div>
+<!-- Assignees -->
+<div class="bg-surface rounded-2xl p-5 shadow-soft mb-5 border border-gray-100">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-sm font-bold uppercase tracking-wider text-text-secondary">Assigned To</h3>
+<button class="text-primary text-xs font-semibold hover:underline">View All</button>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex -space-x-3 rtl:space-x-reverse">
+<img alt="Portrait of Sarah" class="h-10 w-10 rounded-full border-2 border-white object-cover" data-alt="Portrait of a woman smiling" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqk8oS_Zirq220ffKc_GNSpG7qNQxtdphjEtfSo68POzuunTBgsEO_BWM0KbDRKZRip_e5TVr8ulKh0uVI8avxVP_gD2W77_FkAl3KtA9fLakxap7f-LrIK7-ZUJIvVP_popYSkow0kRX9GFzNr3OcYyEWlOrVh62rp06rx87HUIMhyZzM3GtD2x1VBjg8uicnqHrsSMIkUqgg3-JErLri-EGtz38lQIYICC7M6HiLusjfEkCPdBpW5wkgmkHqPeHWcZ_gKMEdhzIH"/>
+<img alt="Portrait of Mike" class="h-10 w-10 rounded-full border-2 border-white object-cover" data-alt="Portrait of a man with serious expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKt39loHeA8V1tljUbEDHC_LxcLlrxYC7pR2FXj11GZ1ktwuI6baQKXYTSLBMvKG64z6x09qHmdQu2FhgBL33I06U2nA4_lREHOnvP7MbpLqS7r88uh_NymxGkDXduTKCKMVwiEGnEHAE8zCSBnuXHz1LZeuHeEk2UpQS-wt9Pqmapn1X-YceN9VesNlPnJHhMisOVuIerJZPj_pOKJFOmNhGWupDt1huOtwnUr4S2l6Q_-OtsffZFa86BpK0UPkt3YETGCT0_BY_J"/>
+<img alt="Portrait of Alex" class="h-10 w-10 rounded-full border-2 border-white object-cover" data-alt="Portrait of a man smiling" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-Ew0ogWTuFooUlfBpFbSFbcYHMGeMK0-tXMlhfyXb56EoAQO4NHA6yxHZowi-I2oFZF56w5XsI9T2Njf0gfNfh4xAzswSiCbzojCufCEcJ9txE2jCsHqsClYQE-ln59JgLSfwhFtsIKQcjJIURuRE8ay7eAXknntv9L9EgU-p6jLxozr5MFGQsPZdDRE96_Dze_RBltG7Rf_2zpyrJ6RqpS9CfJWsQxDoTpL8txLjAv5Ao6UGSsI5b1WOKVHcOcy1bJXlM-Z1oJMc"/>
+<a class="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-gray-100 text-xs font-medium text-gray-600 hover:bg-gray-200" href="#">+2</a>
+</div>
+<span class="text-sm text-gray-500 font-medium ml-2">You and 4 others</span>
+</div>
+</div>
+<!-- Auto Escalation Rules -->
+<div class="bg-surface rounded-2xl overflow-hidden shadow-soft mb-5 border border-gray-100">
+<div class="p-4 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+<span class="material-symbols-outlined text-orange-500">warning</span>
+<h3 class="text-sm font-bold text-text-main">Auto Escalation Rules</h3>
+</div>
+<div class="p-4">
+<ul class="space-y-4 relative pl-2">
+<!-- Connecting Line -->
+<div class="absolute left-[15px] top-2 bottom-6 w-0.5 bg-gray-100"></div>
+<li class="relative flex gap-4 items-start">
+<div class="relative z-10 mt-1 flex h-3 w-3 shrink-0 items-center justify-center rounded-full bg-gray-300 ring-4 ring-white"></div>
+<div class="flex flex-col">
+<span class="text-xs font-bold text-text-secondary uppercase">Level 1</span>
+<span class="text-sm text-text-main">Notify Manager if not accepted within 24h</span>
+</div>
+</li>
+<li class="relative flex gap-4 items-start">
+<div class="relative z-10 mt-1 flex h-3 w-3 shrink-0 items-center justify-center rounded-full bg-orange-300 ring-4 ring-white"></div>
+<div class="flex flex-col">
+<span class="text-xs font-bold text-text-secondary uppercase">Level 2</span>
+<span class="text-sm text-text-main">Escalate to Dept Head if overdue &gt; 2 days</span>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<!-- Recurrence Info (Subtle) -->
+<div class="flex items-center gap-3 px-2 mb-2 opacity-60">
+<span class="material-symbols-outlined text-text-secondary">repeat</span>
+<p class="text-xs font-medium text-text-secondary">This is a one-time task.</p>
+</div>
+</main>
+<!-- Sticky Action Footer -->
+<div class="fixed bottom-[72px] left-0 right-0 z-20 max-w-md mx-auto">
+<!-- Gradient Fade -->
+<div class="h-8 bg-gradient-to-t from-background-light to-transparent w-full pointer-events-none"></div>
+<div class="bg-background-light px-5 pb-4 pt-2">
+<!-- Rejection Input -->
+<div class="mb-3">
+<label class="sr-only" for="rejectReason">Reason for Rejection</label>
+<textarea class="w-full rounded-xl border-gray-200 bg-white px-4 py-3 text-sm text-text-main placeholder:text-gray-400 focus:border-primary focus:ring-primary shadow-sm resize-none" id="rejectReason" placeholder="Enter reason for rejection (Required if rejecting)..." rows="2"></textarea>
+</div>
+<div class="flex gap-3">
+<button class="flex-1 rounded-xl border border-danger/30 bg-surface px-4 py-3.5 text-sm font-bold text-danger hover:bg-danger/5 active:scale-[0.98] transition-all shadow-sm flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">close</span>
+                        Reject
+                    </button>
+<button class="flex-[2] rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-white hover:bg-primary/90 active:scale-[0.98] transition-all shadow-lg shadow-primary/25 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">check</span>
+                        Accept Task
+                    </button>
+</div>
+</div>
+</div>
+<!-- Bottom Navigation -->
+<nav class="fixed bottom-0 z-40 w-full max-w-md border-t border-gray-200 bg-surface/95 backdrop-blur pb-safe">
+<div class="flex h-[72px] items-center justify-around px-2">
+<a class="flex flex-col items-center gap-1 p-2 text-gray-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">home</span>
+<span class="text-[10px] font-medium">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 p-2 text-primary transition-colors" href="#">
+<div class="relative">
+<span class="material-symbols-outlined text-[24px] fill-current">task_alt</span>
+<span class="absolute -right-1 -top-1 flex h-3 w-3 items-center justify-center rounded-full bg-danger ring-2 ring-white"></span>
+</div>
+<span class="text-[10px] font-bold">Tasks</span>
+</a>
+<a class="flex flex-col items-center gap-1 p-2 text-gray-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">chat_bubble_outline</span>
+<span class="text-[10px] font-medium">Chat</span>
+</a>
+<a class="flex flex-col items-center gap-1 p-2 text-gray-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">folder_open</span>
+<span class="text-[10px] font-medium">Docs</span>
+</a>
+<a class="flex flex-col items-center gap-1 p-2 text-gray-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">person</span>
+<span class="text-[10px] font-medium">Profile</span>
+</a>
+</div>
+</nav>
+</div>
+</body></html>

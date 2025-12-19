@@ -1,0 +1,81 @@
+import api from './api';
+
+export interface RequestOTPRequest {
+  mobile: string;
+}
+
+export interface VerifyOTPRequest {
+  mobile: string;
+  otpCode: string;
+  deviceId?: string;
+  deviceType?: 'mobile' | 'web';
+  password?: string; // Optional password for new user registration
+}
+
+export interface LoginWithPasswordRequest {
+  mobile: string;
+  password: string;
+  deviceId?: string;
+  deviceType?: 'mobile' | 'web';
+}
+
+export interface ProfileSetupRequest {
+  name: string;
+  profilePhotoUrl?: string;
+  bio?: string;
+}
+
+export interface ContactSyncRequest {
+  contacts: Array<{
+    name: string;
+    mobile: string;
+  }>;
+}
+
+export const authService = {
+  requestOTP: async (data: RequestOTPRequest) => {
+    const response = await api.post('/auth/request-otp', data);
+    return response.data;
+  },
+
+  verifyOTP: async (data: VerifyOTPRequest) => {
+    const response = await api.post('/auth/verify-otp', data);
+    if (response.data.success && response.data.data.token) {
+      localStorage.setItem('token', response.data.data.token);
+      localStorage.setItem('refreshToken', response.data.data.refreshToken);
+    }
+    return response.data;
+  },
+
+  loginWithPassword: async (data: LoginWithPasswordRequest) => {
+    const deviceId = localStorage.getItem('deviceId') || `web-${Date.now()}`;
+    localStorage.setItem('deviceId', deviceId);
+    
+    const response = await api.post('/auth/login', {
+      ...data,
+      deviceId,
+      deviceType: 'web',
+    });
+    if (response.data.success && response.data.data.token) {
+      localStorage.setItem('token', response.data.data.token);
+      localStorage.setItem('refreshToken', response.data.data.refreshToken);
+    }
+    return response.data;
+  },
+
+  getCurrentUser: async () => {
+    const response = await api.get('/auth/me');
+    return response.data;
+  },
+
+  setupProfile: async (data: ProfileSetupRequest) => {
+    const response = await api.put('/auth/profile', data);
+    return response.data;
+  },
+
+  syncContacts: async (data: ContactSyncRequest) => {
+    const response = await api.post('/auth/contacts/sync', data);
+    return response.data;
+  },
+};
+

@@ -1,0 +1,502 @@
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Document Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Noto+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#1e40af', // Blue 800 - Deep Blue
+                            50: '#eff6ff',
+                            100: '#dbeafe', // Secondary light blue
+                            200: '#bfdbfe',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a', // Deepest blue
+                        },
+                        secondary: '#dbeafe',
+                        background: '#f8fafc', // Slate 50
+                        surface: '#ffffff',
+                        border: '#e2e8f0', // Slate 200
+                        text: {
+                            main: '#0f172a', // Slate 900
+                            muted: '#64748b', // Slate 500
+                        }
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"],
+                        "body": ["Noto Sans", "sans-serif"],
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.75rem",
+                        "xl": "1rem", 
+                        "2xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                        'card': '0 0 1px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.08)',
+                        'floating': '0 10px 40px -10px rgba(0,0,0,0.1)'
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }input[type="checkbox"]:checked {
+            background-color: #2563eb;
+            border-color: #2563eb;
+        }
+    </style>
+</head>
+<body class="bg-background text-text-main font-display overflow-hidden antialiased">
+<div class="flex h-screen w-full overflow-hidden">
+<div class="hidden md:flex w-64 flex-col bg-white border-r border-slate-200 h-full font-body shrink-0 z-20">
+<div class="p-6 pb-2">
+<div class="flex items-center gap-3 mb-8">
+<div class="bg-primary p-2 rounded-lg text-white shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-2xl">admin_panel_settings</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-slate-900 text-lg font-extrabold tracking-tight leading-none">ORGIT</h1>
+<span class="text-[10px] text-slate-500 font-medium">Enterprise Admin</span>
+</div>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] text-slate-400 group-hover:text-slate-600 transition-colors">grid_view</span>
+<span class="font-medium text-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] text-slate-400 group-hover:text-slate-600 transition-colors">check_circle</span>
+<span class="font-medium text-sm">Tasks</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary text-white shadow-md shadow-primary/20 group" href="#">
+<span class="material-symbols-outlined text-[22px]">description</span>
+<span class="font-medium text-sm">Documents</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] text-slate-400 group-hover:text-slate-600 transition-colors">verified_user</span>
+<span class="font-medium text-sm">Compliance</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] text-slate-400 group-hover:text-slate-600 transition-colors">group</span>
+<span class="font-medium text-sm">Users</span>
+</a>
+<div class="px-3 pt-6 pb-2">
+<p class="text-xs font-bold text-slate-400 uppercase tracking-wider">System</p>
+</div>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] text-slate-400 group-hover:text-slate-600 transition-colors">settings</span>
+<span class="font-medium text-sm">Configuration</span>
+</a>
+<div class="pl-[11px] space-y-1 pt-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors pl-11" href="#">
+<span class="font-medium text-sm">Notifications</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors pl-11" href="#">
+<span class="font-medium text-sm">Auto Escalation</span>
+</a>
+</div>
+</nav>
+</div>
+<div class="mt-auto p-4 border-t border-slate-100">
+<div class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50/50">
+<div class="size-9 rounded-full bg-cover bg-center border border-slate-200" data-alt="User profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuASOcCNNlFiJDSBt3iGwqNEAfWFM0m51kNrNjkm3pgjpRD6_UeKHde_5zhtMKyl8RcYrGaYgXsqKszvL9Hs_0SBV2MyoYwAd0h5HmQP5tIhYp1I4LuK1PL3vXrsWv-hnIrfQeA4b5vEt-ZnuPRUhjZh43WYyKH7hkaoypZov4FScZA6n1TELwG1lmVsDd1bcXZaeknS9LESKeRQ1tL8ftRMiErEjNdDOQT0Cnk-YpQRF2VcyVjm8VS4c0pYkUacuL2hMO5wrKBA49WW");'></div>
+<div class="min-w-0">
+<p class="text-sm font-bold text-slate-900 truncate">Alex Morgan</p>
+<p class="text-xs text-slate-500 truncate">admin@orgit.com</p>
+</div>
+</div>
+</div>
+</div>
+<div class="flex-1 flex flex-col h-full overflow-hidden relative bg-background">
+<header class="h-16 border-b border-border bg-surface/80 backdrop-blur-md flex items-center justify-between px-8 shrink-0 z-10 sticky top-0">
+<div class="flex items-center gap-4">
+<button class="md:hidden text-text-main">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="flex items-center gap-2 text-sm text-text-muted">
+<span>Dashboard</span>
+<span class="material-symbols-outlined text-base">chevron_right</span>
+<span class="font-semibold text-text-main">Document Management</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[18px]">search</span>
+<input class="bg-slate-100 border border-transparent hover:border-border focus:border-primary-600 rounded-full py-2 pl-10 pr-4 text-sm text-text-main focus:ring-0 focus:outline-none w-64 placeholder:text-text-muted transition-all" placeholder="Search documents..." type="text"/>
+</div>
+<button class="relative text-text-muted hover:text-primary-700 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0.5 right-0.5 size-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+</button>
+<button class="text-text-muted hover:text-primary-700 transition-colors">
+<span class="material-symbols-outlined">help</span>
+</button>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto p-6 md:p-8 pb-20 scroll-smooth flex gap-8">
+<div class="flex-1 space-y-8">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h1 class="text-2xl md:text-3xl font-extrabold text-text-main tracking-tight mb-2">Document Management</h1>
+<p class="text-text-muted text-sm">Create, manage, and organize your business documentation efficiently.</p>
+</div>
+<button class="bg-primary hover:bg-primary-700 text-white font-semibold py-2.5 px-6 rounded-lg flex items-center gap-2 transition-all shadow-lg shadow-primary/20 active:scale-95">
+<span class="material-symbols-outlined text-[20px]">upload_file</span>
+<span>Upload Document</span>
+</button>
+</div>
+<div>
+<h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-600">dashboard</span>
+                        Start with a Template
+                    </h2>
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+<button class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:border-primary-200 hover:shadow-md transition-all group text-left h-32 flex flex-col justify-between relative overflow-hidden">
+<div class="size-10 rounded-full bg-blue-50 flex items-center justify-center text-primary-600 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">receipt_long</span>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 text-sm">Invoices</h3>
+<p class="text-[10px] text-slate-500">Sales &amp; Services</p>
+</div>
+<div class="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-primary-400 text-lg">add_circle</span>
+</div>
+</button>
+<button class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:border-purple-200 hover:shadow-md transition-all group text-left h-32 flex flex-col justify-between relative overflow-hidden">
+<div class="size-10 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">request_quote</span>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 text-sm">Quotations</h3>
+<p class="text-[10px] text-slate-500">Proposals &amp; Bids</p>
+</div>
+<div class="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-purple-400 text-lg">add_circle</span>
+</div>
+</button>
+<button class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:border-amber-200 hover:shadow-md transition-all group text-left h-32 flex flex-col justify-between relative overflow-hidden">
+<div class="size-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">receipt</span>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 text-sm">Receipts</h3>
+<p class="text-[10px] text-slate-500">Payment Proofs</p>
+</div>
+<div class="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-amber-400 text-lg">add_circle</span>
+</div>
+</button>
+<button class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:border-emerald-200 hover:shadow-md transition-all group text-left h-32 flex flex-col justify-between relative overflow-hidden">
+<div class="size-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">shopping_cart</span>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 text-sm">Purchase Orders</h3>
+<p class="text-[10px] text-slate-500">Procurement</p>
+</div>
+<div class="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-emerald-400 text-lg">add_circle</span>
+</div>
+</button>
+<button class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:border-cyan-200 hover:shadow-md transition-all group text-left h-32 flex flex-col justify-between relative overflow-hidden">
+<div class="size-10 rounded-full bg-cyan-50 flex items-center justify-center text-cyan-600 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 text-sm">Ledgers</h3>
+<p class="text-[10px] text-slate-500">Financial Records</p>
+</div>
+<div class="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-cyan-400 text-lg">add_circle</span>
+</div>
+</button>
+</div>
+</div>
+<div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex-1 flex flex-col">
+<div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0">
+<button class="px-4 py-2 bg-primary text-white rounded-full text-sm font-semibold shadow-sm whitespace-nowrap">All Docs</button>
+<button class="px-4 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-full text-sm font-medium transition-colors whitespace-nowrap">Invoices</button>
+<button class="px-4 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-full text-sm font-medium transition-colors whitespace-nowrap">Receipts</button>
+<button class="px-4 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-full text-sm font-medium transition-colors whitespace-nowrap">Drafts</button>
+<button class="px-4 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-full text-sm font-medium transition-colors flex items-center gap-2 border border-slate-200 whitespace-nowrap">
+<span class="material-symbols-outlined text-lg">filter_list</span>
+                            Filter
+                        </button>
+</div>
+<div class="flex items-center gap-2 text-sm text-slate-500 whitespace-nowrap">
+<span class="uppercase text-xs font-bold tracking-wider">Sort By:</span>
+<button class="flex items-center gap-1 font-semibold text-slate-900">
+                            Date Created
+                            <span class="material-symbols-outlined text-lg">expand_more</span>
+</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-slate-50/50 text-xs uppercase font-bold text-slate-400 tracking-wider">
+<tr>
+<th class="px-6 py-4">Document Name</th>
+<th class="px-6 py-4">Type</th>
+<th class="px-6 py-4">Created Date</th>
+<th class="px-6 py-4">Status</th>
+<th class="px-6 py-4 text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100">
+<tr class="hover:bg-slate-50/50 transition-colors group cursor-pointer">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded bg-red-50 flex items-center justify-center text-red-600">
+<span class="material-symbols-outlined text-lg">picture_as_pdf</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-slate-900 text-sm mb-0.5">INV-2023-001</span>
+<span class="text-xs text-slate-500">For: Acme Corp</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm font-medium text-slate-700 bg-slate-100 px-2 py-1 rounded text-xs">Invoice</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm text-slate-600">Oct 24, 2023</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-50 text-green-600 border border-green-100">
+<span class="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5"></span>
+                                        Sent
+                                    </span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2">
+<button class="text-slate-400 hover:text-primary-600 transition-colors tooltip" title="View">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+<button class="text-slate-400 hover:text-primary-600 transition-colors tooltip" title="Download">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 transition-colors group cursor-pointer">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded bg-blue-50 flex items-center justify-center text-blue-600">
+<span class="material-symbols-outlined text-lg">description</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-slate-900 text-sm mb-0.5">Q4 Proposal Draft</span>
+<span class="text-xs text-slate-500">For: TechFlow Systems</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm font-medium text-slate-700 bg-slate-100 px-2 py-1 rounded text-xs">Quotation</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm text-slate-600">Oct 22, 2023</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200">
+<span class="w-1.5 h-1.5 rounded-full bg-slate-400 mr-1.5"></span>
+                                        Draft
+                                    </span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2">
+<button class="text-slate-400 hover:text-primary-600 transition-colors tooltip" title="Edit">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="text-slate-400 hover:text-primary-600 transition-colors tooltip" title="Download">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 transition-colors group cursor-pointer bg-blue-50/30">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded bg-red-50 flex items-center justify-center text-red-600">
+<span class="material-symbols-outlined text-lg">picture_as_pdf</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-slate-900 text-sm mb-0.5">Receipt #REC-992</span>
+<span class="text-xs text-slate-500">For: Global Logistics</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm font-medium text-slate-700 bg-slate-100 px-2 py-1 rounded text-xs">Receipt</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm text-slate-600">Oct 20, 2023</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-600 border border-blue-100">
+<span class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5"></span>
+                                        Paid
+                                    </span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2">
+<button class="text-slate-400 hover:text-primary-600 transition-colors tooltip" title="View">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+<button class="text-slate-400 hover:text-primary-600 transition-colors tooltip" title="Download">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 transition-colors group cursor-pointer">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded bg-emerald-50 flex items-center justify-center text-emerald-600">
+<span class="material-symbols-outlined text-lg">table_chart</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-slate-900 text-sm mb-0.5">General Ledger 2023</span>
+<span class="text-xs text-slate-500">Internal</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm font-medium text-slate-700 bg-slate-100 px-2 py-1 rounded text-xs">Ledger</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm text-slate-600">Sep 30, 2023</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-600 border border-amber-100">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>
+                                        Review
+                                    </span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2">
+<button class="text-slate-400 hover:text-primary-600 transition-colors tooltip" title="View">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+<button class="text-slate-400 hover:text-primary-600 transition-colors tooltip" title="Download">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="hidden lg:flex w-96 shrink-0 flex-col gap-6 sticky top-0 h-fit bg-white rounded-2xl shadow-floating border border-slate-100 p-6">
+<div class="flex items-center justify-between mb-2">
+<h2 class="text-lg font-bold text-slate-900">Entity Auto-fill</h2>
+<button class="text-slate-400 hover:text-slate-600">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+<div class="bg-indigo-50 border border-indigo-100 p-4 rounded-xl flex items-start gap-3">
+<span class="material-symbols-outlined text-indigo-600 mt-0.5">auto_awesome</span>
+<div>
+<p class="text-xs font-bold text-indigo-800 uppercase mb-0.5">Smart Data</p>
+<p class="text-sm text-slate-700 leading-snug">The following data will be automatically populated in new documents for <span class="font-bold">Global Logistics</span>.</p>
+</div>
+</div>
+<div class="space-y-6">
+<div>
+<div class="flex items-center justify-between mb-2">
+<h3 class="text-xs font-bold text-slate-400 uppercase">Entity Details</h3>
+<span class="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">Synced</span>
+</div>
+<div class="bg-slate-50 rounded-xl border border-slate-100 p-4 space-y-3">
+<div class="flex justify-between items-start">
+<span class="text-xs text-slate-500">Name</span>
+<span class="text-sm font-semibold text-slate-900 text-right">Global Logistics Inc.</span>
+</div>
+<div class="flex justify-between items-start">
+<span class="text-xs text-slate-500">Tax ID</span>
+<span class="text-sm font-semibold text-slate-900 text-right">US-8829-102</span>
+</div>
+<div class="flex justify-between items-start">
+<span class="text-xs text-slate-500">Billing Addr</span>
+<span class="text-sm font-semibold text-slate-900 text-right w-32 truncate">442 Ocean Drive, Miami FL, 33101</span>
+</div>
+</div>
+</div>
+<div>
+<h3 class="text-xs font-bold text-slate-400 uppercase mb-2">Template Preview</h3>
+<div class="relative bg-white border border-slate-200 rounded-lg p-4 shadow-sm h-48 overflow-hidden select-none">
+<div class="absolute inset-0 bg-white p-4">
+<div class="flex justify-between mb-4">
+<div class="w-16 h-4 bg-slate-200 rounded"></div>
+<div class="w-10 h-10 bg-slate-100 rounded-full"></div>
+</div>
+<div class="space-y-2 mb-4">
+<div class="w-24 h-2 bg-slate-100 rounded"></div>
+<div class="w-32 h-2 bg-indigo-100 rounded animate-pulse"></div> 
+<div class="w-20 h-2 bg-indigo-100 rounded animate-pulse"></div> 
+</div>
+<div class="w-full h-px bg-slate-100 my-2"></div>
+<div class="space-y-2">
+<div class="flex justify-between">
+<div class="w-12 h-2 bg-slate-100 rounded"></div>
+<div class="w-8 h-2 bg-slate-100 rounded"></div>
+</div>
+<div class="flex justify-between">
+<div class="w-16 h-2 bg-slate-100 rounded"></div>
+<div class="w-8 h-2 bg-slate-100 rounded"></div>
+</div>
+</div>
+</div>
+<div class="absolute bottom-2 right-2 bg-indigo-600 text-white text-[10px] px-2 py-1 rounded-full shadow-lg font-bold">
+                            Live Preview
+                        </div>
+</div>
+</div>
+<div class="space-y-3">
+<div class="flex items-center gap-2">
+<input checked="" class="rounded border-slate-300 text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+<label class="text-sm text-slate-600">Auto-increment Invoice #</label>
+</div>
+<div class="flex items-center gap-2">
+<input checked="" class="rounded border-slate-300 text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+<label class="text-sm text-slate-600">Apply Default Tax Rate (8%)</label>
+</div>
+</div>
+</div>
+<div class="pt-4 mt-auto">
+<button class="w-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-semibold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">edit_document</span>
+                    Edit Source Data
+                </button>
+</div>
+</div>
+</main>
+</div>
+</div>
+</body></html>

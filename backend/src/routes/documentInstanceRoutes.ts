@@ -1,0 +1,36 @@
+import { Router } from 'express';
+import { authenticate } from '../middleware/authMiddleware';
+import {
+  createInstance,
+  getInstances,
+  getInstanceById,
+  updateInstance,
+  deleteInstance,
+  downloadInstance,
+} from '../controllers/documentInstanceController';
+
+const router = Router();
+
+// All routes require authentication
+router.use(authenticate);
+
+// Create document instance
+router.post('/', createInstance);
+
+// Get document instances (with filters)
+router.get('/', getInstances);
+
+// Get document instance by ID
+router.get('/:id', getInstanceById);
+
+// Update document instance
+router.put('/:id', updateInstance);
+
+// Delete/archive document instance
+router.delete('/:id', deleteInstance);
+
+// Download PDF
+router.get('/:id/download', downloadInstance);
+
+export default router;
+

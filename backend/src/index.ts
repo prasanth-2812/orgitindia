@@ -1,0 +1,105 @@
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import dotenv from 'dotenv';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import authRoutes from './routes/authRoutes';
+import messageRoutes from './routes/messageRoutes';
+import groupRoutes from './routes/groupRoutes';
+import taskRoutes from './routes/taskRoutes';
+import dashboardRoutes from './routes/dashboardRoutes';
+import notificationRoutes from './routes/notificationRoutes';
+import organizationRoutes from './routes/organizationRoutes';
+import documentTemplateRoutes from './routes/documentTemplateRoutes';
+import documentRoutes from './routes/documentRoutes';
+import documentInstanceRoutes from './routes/documentInstanceRoutes';
+import complianceRoutes from './routes/complianceRoutes';
+import taskMonitoringRoutes from './routes/taskMonitoringRoutes';
+import superAdminDashboardRoutes from './routes/superAdminDashboardRoutes';
+import userRoutes from './routes/userRoutes';
+import platformSettingsRoutes from './routes/platformSettingsRoutes';
+import chatUserRoutes from './routes/chatUserRoutes';
+import { setupMessageHandlers } from './socket/messageHandlers';
+import { setupTaskJobs } from './jobs/taskJobs';
+
+dotenv.config();
+
+const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: process.env.SOCKET_CORS_ORIGIN?.split(',') || ['http://localhost:3001', 'http://localhost:19006'],
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+});
+
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(helmet());
+app.use(cors({
+  origin: process.env.SOCKET_CORS_ORIGIN?.split(',') || ['http://localhost:3001', 'http://localhost:19006'],
+  credentials: true,
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/messages', messageRoutes);
+app.use('/api/groups', groupRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/documents', documentRoutes);
+app.use('/api/document-instances', documentInstanceRoutes);
+app.use('/api/chat/users', chatUserRoutes);
+
+// Super Admin Routes
+app.use('/api/super-admin/organizations', organizationRoutes);
+app.use('/api/super-admin/document-templates', documentTemplateRoutes);
+app.use('/api/super-admin/tasks', taskMonitoringRoutes);
+app.use('/api/super-admin/dashboard', superAdminDashboardRoutes);
+app.use('/api/super-admin/users', userRoutes);
+app.use('/api/super-admin/settings', platformSettingsRoutes);
+
+// Compliance Routes (accessible by both Super Admin and Admin)
+app.use('/api/compliance', complianceRoutes);
+
+// Setup Socket.io handlers
+setupMessageHandlers(io);
+
+// Error handling middleware
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Error:', err);
+  res.status(err.status || 500).json({
+    success: false,
+    error: err.message || 'Internal server error',
+  });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'Route not found',
+  });
+});
+
+httpServer.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Setup scheduled jobs
+  setupTaskJobs();
+});
+
+export { io };
+

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Compliance Management Home</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#a413ec",
+                        "background-light": "#f7f6f8",
+                        "background-dark": "#1c1022",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white min-h-screen flex flex-col overflow-x-hidden">
+<header class="sticky top-0 z-50 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 transition-colors duration-200">
+<div class="flex items-center justify-between px-4 py-3">
+<div class="flex items-center gap-3">
+<div class="relative">
+<div class="bg-center bg-no-repeat bg-cover rounded-full h-10 w-10 border-2 border-primary/20" data-alt="Professional avatar of a male employee smiling" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBkhJDlDQfzg3WsZ-4ipwClqpHCKW87eyeKEZyurcIKL8lHe-AF368SZGYGXc5OaF1I4KgdE4QBxytZIdNdBA-kN_BA7bIJrML1TSYK6LAxinSFkq48anPhY1bSrpB7stiKX9iuiMIU5gHc_ys5VGyz3tpsPuf2EZob4wIFOnVotplS60nPLNz0EubgT9N4BLzzvQZRCWaJhmnq4WgyMOiOzKwTnZ5RQz-pcpFAgZI-eb1V5W2atuMuU0I1XdxIseJKzcQV_7r29Lyx");'>
+</div>
+<div class="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-white dark:border-background-dark"></div>
+</div>
+<div>
+<h2 class="text-lg font-bold leading-tight">Compliance Hub</h2>
+<p class="text-xs text-gray-500 dark:text-gray-400">Admin View</p>
+</div>
+</div>
+<button class="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined text-gray-700 dark:text-gray-200">notifications</span>
+<span class="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary animate-pulse"></span>
+</button>
+</div>
+</header>
+<main class="flex-1 pb-24">
+<div class="px-4 py-4">
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-gray-400 group-focus-within:text-primary transition-colors">search</span>
+</div>
+<input class="block w-full pl-10 pr-12 py-3 rounded-xl border-none bg-white dark:bg-gray-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-primary placeholder-gray-400 dark:placeholder-gray-500 text-sm transition-all" placeholder="Search acts, filings, or circulars..." type="text"/>
+<div class="absolute inset-y-0 right-0 pr-2 flex items-center">
+<button class="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">tune</span>
+</button>
+</div>
+</div>
+</div>
+<div class="px-4 mb-6">
+<div class="bg-gradient-to-br from-gray-900 to-gray-800 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-5 shadow-lg relative overflow-hidden text-white">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl -mr-10 -mt-10"></div>
+<div class="absolute bottom-0 left-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl -ml-6 -mb-6"></div>
+<div class="relative z-10">
+<div class="flex justify-between items-start mb-4">
+<div>
+<p class="text-gray-300 text-xs font-medium uppercase tracking-wider mb-1">Critical Deadline</p>
+<h3 class="text-xl font-bold">GSTR-1 Filing</h3>
+</div>
+<div class="bg-red-500/20 text-red-200 text-xs font-bold px-2.5 py-1 rounded-full border border-red-500/30 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+                            3 Days Left
+                        </div>
+</div>
+<div class="bg-white/10 rounded-xl p-3 backdrop-blur-sm mb-4 border border-white/5">
+<div class="flex justify-between text-sm mb-1.5">
+<span class="text-gray-300">Completion Status</span>
+<span class="font-bold text-primary-300">85%</span>
+</div>
+<div class="w-full bg-gray-700 rounded-full h-2">
+<div class="bg-primary h-2 rounded-full" style="width: 85%"></div>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="flex-1 bg-white text-gray-900 text-sm font-semibold py-2.5 rounded-lg hover:bg-gray-50 transition-colors">
+                            Complete Now
+                        </button>
+<button class="flex-1 bg-transparent border border-white/30 text-white text-sm font-semibold py-2.5 rounded-lg hover:bg-white/10 transition-colors">
+                            View Details
+                        </button>
+</div>
+</div>
+</div>
+</div>
+<div class="px-4 mb-3 flex items-center justify-between">
+<h2 class="text-lg font-bold text-gray-900 dark:text-white">Compliance Repository</h2>
+<button class="text-primary text-sm font-medium hover:underline">View All</button>
+</div>
+<div class="grid grid-cols-2 gap-3 px-4 mb-6">
+<div class="group bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-primary/30 transition-all cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-3 group-hover:bg-primary group-hover:text-white text-primary transition-colors">
+<span class="material-symbols-outlined">receipt_long</span>
+</div>
+<h3 class="font-bold text-gray-900 dark:text-white mb-1">GST Regulations</h3>
+<p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">Returns, E-Invoicing &amp; Input Tax Credit</p>
+</div>
+<div class="group bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-primary/30 transition-all cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-3 group-hover:bg-primary group-hover:text-white text-primary transition-colors">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</div>
+<h3 class="font-bold text-gray-900 dark:text-white mb-1">Income Tax Act</h3>
+<p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">TDS rates, Deductions &amp; Annual Filing</p>
+</div>
+<div class="group bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-primary/30 transition-all cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-3 group-hover:bg-primary group-hover:text-white text-primary transition-colors">
+<span class="material-symbols-outlined">domain</span>
+</div>
+<h3 class="font-bold text-gray-900 dark:text-white mb-1">ROC Guidelines</h3>
+<p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">Annual Returns &amp; MCA Compliance</p>
+</div>
+<div class="group bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-primary/30 transition-all cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-3 group-hover:bg-primary group-hover:text-white text-primary transition-colors">
+<span class="material-symbols-outlined">gavel</span>
+</div>
+<h3 class="font-bold text-gray-900 dark:text-white mb-1">Business Laws</h3>
+<p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">Indian Contract Act &amp; Companies Act</p>
+</div>
+</div>
+<div class="px-4">
+<h3 class="text-base font-bold text-gray-900 dark:text-white mb-3">Recent Updates</h3>
+<div class="flex flex-col gap-3">
+<div class="bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm border border-gray-100 dark:border-gray-700 flex gap-3 items-start">
+<div class="h-10 w-10 shrink-0 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-300">
+<span class="material-symbols-outlined text-[20px]">notifications_active</span>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-semibold text-gray-900 dark:text-white leading-tight">GST Late Fees Revised</h4>
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">New circular issued by CBIC regarding the reduction in late fees for GSTR-3B filings.</p>
+<p class="text-[10px] text-gray-400 mt-2 font-medium">2 hours ago</p>
+</div>
+</div>
+<div class="bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm border border-gray-100 dark:border-gray-700 flex gap-3 items-start">
+<div class="h-10 w-10 shrink-0 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-300">
+<span class="material-symbols-outlined text-[20px]">description</span>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-semibold text-gray-900 dark:text-white leading-tight">Form 16 Issued</h4>
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Form 16 for the financial year 2023-24 is now available for download in the Documents tab.</p>
+<p class="text-[10px] text-gray-400 mt-2 font-medium">Yesterday</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<button class="fixed bottom-24 right-4 h-14 w-14 bg-primary text-white rounded-full shadow-[0_4px_12px_rgba(164,19,236,0.4)] flex items-center justify-center hover:bg-primary/90 hover:scale-105 transition-all z-40">
+<span class="material-symbols-outlined text-[28px]">add</span>
+</button>
+<nav class="fixed bottom-0 w-full bg-white dark:bg-background-dark border-t border-gray-200 dark:border-gray-800 pb-safe pt-2 z-50">
+<div class="flex justify-between items-center h-16 px-1">
+<a class="flex flex-col items-center justify-center w-full h-full space-y-1 text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">dashboard</span>
+<span class="text-[10px] font-medium">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full space-y-1 text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">chat_bubble_outline</span>
+<span class="text-[10px] font-medium">Chat</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full space-y-1 text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">task_alt</span>
+<span class="text-[10px] font-medium">Task</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full space-y-1 text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">description</span>
+<span class="text-[10px] font-medium">Document</span>
+</a>
+<div class="relative flex flex-col items-center justify-center w-full h-full space-y-1 text-primary cursor-default">
+<div class="absolute -top-1 w-8 h-1 bg-primary rounded-b-full shadow-[0_2px_8px_rgba(164,19,236,0.5)]"></div>
+<span class="material-symbols-outlined text-[24px] fill-current">shield</span>
+<span class="text-[10px] font-bold">Compliance</span>
+</div>
+<a class="flex flex-col items-center justify-center w-full h-full space-y-1 text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+<span class="text-[10px] font-medium">Settings</span>
+</a>
+</div>
+<div class="h-5 bg-white dark:bg-background-dark w-full"></div>
+</nav>
+</body></html>

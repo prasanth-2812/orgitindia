@@ -1,0 +1,21 @@
+-- ORGIT Database Schema
+-- This file contains the complete database schema for reference
+-- Use migrations for actual database setup
+
+-- Run migrations in order:
+-- 001_create_organizations.sql
+-- 002_create_users.sql
+-- 003_create_user_organizations.sql
+-- 004_create_sessions.sql
+-- 005_create_contacts.sql
+-- 006_create_groups.sql
+-- 007_create_group_members.sql
+-- 008_create_messages.sql
+-- 009_create_message_status.sql
+-- 010_create_tasks.sql
+-- 011_create_task_assignments.sql
+-- 012_create_task_status_logs.sql
+-- 013_create_notifications.sql
+-- 014_create_otp_verifications.sql
+-- 015_add_foreign_key_task_id_to_groups.sql
+

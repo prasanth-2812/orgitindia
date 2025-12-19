@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Main Messaging Screen</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#a413ec",
+                        "primary-dark": "#7a0eb0",
+                        "background-light": "#f7f6f8",
+                        "background-dark": "#1c1022",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#2d1b36",
+                        "text-main-light": "#170d1b",
+                        "text-main-dark": "#f3eef6",
+                        "text-sub-light": "#804c9a",
+                        "text-sub-dark": "#bca3c9",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>.no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased transition-colors duration-200">
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden pb-24">
+<div class="sticky top-0 z-10 flex flex-col gap-2 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md px-4 pt-4 pb-2">
+<div class="flex items-center h-12 justify-between">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 overflow-hidden rounded-full border-2 border-white dark:border-surface-dark shadow-sm bg-cover bg-center" data-alt="User profile avatar showing a smiling face" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAap17X9v945cTwgo6qxv0ThznZE-ucMSEKW4hfBojCAkW7VQhPk-NKn3iAVTo87Kxsmu8eUp_L5FLy2P6cVNp9mobNzNH4Clwc_APR3ut6cuYc256m0XD9KzlsRXLvTKLjmxj-y_tl1GhmSUIIwWc_bS7E0QZBc0kVhv4G21Wmn5ZNQP_erRugCv3l08iY4bGp7kD_fP5KhML-QL3MK139YPF16BLSK8Iqi-l1RtBEsdPW7ovJN__3mS6nXWq6a77OVTVQEfYq0213');">
+</div>
+</div>
+<div class="flex items-center justify-end">
+<button class="flex items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-primary/10 hover:bg-primary/20 text-primary transition-colors">
+<span class="material-symbols-outlined text-primary" style="font-size: 24px;">edit_square</span>
+</button>
+</div>
+</div>
+<div class="flex justify-between items-end">
+<p class="text-text-main-light dark:text-text-main-dark tracking-tight text-[28px] font-bold leading-tight">Messages</p>
+</div>
+</div>
+<div class="px-4 py-2">
+<label class="flex flex-col h-12 w-full">
+<div class="flex w-full flex-1 items-stretch rounded-xl h-full shadow-sm bg-surface-light dark:bg-surface-dark transition-colors">
+<div class="flex items-center justify-center pl-4 text-text-sub-light dark:text-text-sub-dark">
+<span class="material-symbols-outlined" style="font-size: 20px;">search</span>
+</div>
+<input class="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl bg-transparent text-text-main-light dark:text-text-main-dark focus:outline-0 focus:ring-2 focus:ring-primary/50 border-none h-full placeholder:text-text-sub-light/70 dark:placeholder:text-text-sub-dark/70 px-3 text-base font-normal leading-normal" placeholder="Search chats or tasks..." value=""/>
+</div>
+</label>
+</div>
+<div class="px-4 py-2">
+<div class="flex h-10 w-full items-center justify-center rounded-lg bg-surface-light dark:bg-surface-dark p-1 shadow-sm">
+<label class="flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-md px-2 bg-primary shadow-sm text-white transition-all duration-200">
+<span class="truncate text-sm font-semibold">All</span>
+<input checked="" class="invisible w-0 fixed" name="filter-group" type="radio" value="All"/>
+</label>
+<label class="flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-md px-2 hover:bg-background-light dark:hover:bg-background-dark/50 text-text-sub-light dark:text-text-sub-dark text-sm font-medium transition-all duration-200">
+<span class="truncate">Direct</span>
+<input class="invisible w-0 fixed" name="filter-group" type="radio" value="Direct"/>
+</label>
+<label class="flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-md px-2 hover:bg-background-light dark:hover:bg-background-dark/50 text-text-sub-light dark:text-text-sub-dark text-sm font-medium transition-all duration-200">
+<span class="truncate">Task Groups</span>
+<input class="invisible w-0 fixed" name="filter-group" type="radio" value="Task Groups"/>
+</label>
+</div>
+</div>
+<div class="flex flex-col mt-2 gap-1">
+<div class="px-4 py-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">push_pin</span>
+<p class="text-xs font-bold uppercase tracking-wider text-text-sub-light dark:text-text-sub-dark">Priority &amp; Tasks</p>
+</div>
+<div class="group relative flex items-center gap-4 bg-surface-light dark:bg-surface-dark px-4 py-3 active:bg-primary/5 transition-colors cursor-pointer border-l-4 border-primary">
+<div class="relative shrink-0">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-xl size-14 shadow-sm" data-alt="Abstract geometric purple pattern representing a compliance audit task" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDhcXkFm09gXa7396hM2Z4xcBCWM0DNIq6CEaWZ7jANE1qjfdOaWROgYzMGfqLZhXRvuJkhFdLYMCYhMneMWwPzoJRmfNruOEi3H1-xFpqDM5b_iNC7ONOp_ZF2AJwJbiZBi6O3GZL6wJ6JehNfQ5we-3s1DgzwnVnRcukl9q9-4NtmiRvsdLSiJ5B668lJF_T-ZrO-exJnPwlqFiSdaaMPI9wvcGF7pL6zyO_3yvZ-WhrHrJkoD1a_8k1LI2xF1FrsH7xJcMoJ2PP_");'>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-white dark:bg-surface-dark rounded-full p-0.5">
+<div class="bg-primary text-white rounded-full p-1 flex items-center justify-center size-5">
+<span class="material-symbols-outlined" style="font-size: 12px;">assignment</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col justify-center flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-0.5">
+<p class="text-text-main-light dark:text-text-main-dark text-base font-bold leading-normal truncate">Q3 Compliance Audit</p>
+<p class="text-primary text-xs font-semibold shrink-0 ml-2">10:42 AM</p>
+</div>
+<div class="flex items-center gap-2">
+<span class="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 text-[10px] font-bold px-1.5 py-0.5 rounded">URGENT</span>
+<p class="text-text-main-light dark:text-text-main-dark text-sm font-medium leading-normal truncate">Please upload the safety doc ASAP...</p>
+</div>
+</div>
+<div class="shrink-0 flex flex-col items-end justify-center gap-1">
+<div class="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-white text-[10px] font-bold">3</div>
+</div>
+</div>
+<div class="group relative flex items-center gap-4 bg-background-light dark:bg-background-dark px-4 py-3 active:bg-primary/5 transition-colors cursor-pointer">
+<div class="relative shrink-0">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-xl size-14 shadow-sm opacity-90" data-alt="Simple chart graphic representing inventory levels" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCfZPtodBRlI-I3jQzyUZxr2zovzitn3XpsncNzow_eH1L5tNM0eAY40_GMZ9G_vp6sR41l4TMbP9_MnOQ_4p9WPcouj18qxwjLYDBquXTTZSYc83ofH7257ksRSl7lD1xId592cnHdmG2FwrbMJXQtgtbqS9Ny30LM-fFQvYfEU-M4CjD6OYdpYOiMMl-LWAqcQmnKqjYVGyEIn6yHfSArgG2WljRjl_XU55l7_8uFtFEKH4U9PQgf0OpWp32eK5L66FSqJyFvF5Jh");'>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-white dark:bg-background-dark rounded-full p-0.5">
+<div class="bg-text-sub-light text-white rounded-full p-1 flex items-center justify-center size-5">
+<span class="material-symbols-outlined" style="font-size: 12px;">inventory_2</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col justify-center flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-0.5">
+<p class="text-text-main-light dark:text-text-main-dark text-base font-semibold leading-normal truncate">Inventory Check - Zone B</p>
+<p class="text-text-sub-light dark:text-text-sub-dark text-xs font-normal shrink-0 ml-2">Yesterday</p>
+</div>
+<p class="text-text-sub-light dark:text-text-sub-dark text-sm font-normal leading-normal truncate">Bob: Count is finished for aisle 4.</p>
+</div>
+</div>
+<div class="h-px bg-gray-200 dark:bg-gray-800 mx-4 my-1"></div>
+<div class="px-4 py-2 mt-1 flex items-center gap-2">
+<span class="material-symbols-outlined text-text-sub-light dark:text-text-sub-dark text-sm">person</span>
+<p class="text-xs font-bold uppercase tracking-wider text-text-sub-light dark:text-text-sub-dark">Recent Messages</p>
+</div>
+<div class="group flex items-center gap-4 bg-background-light dark:bg-background-dark px-4 py-3 active:bg-primary/5 transition-colors cursor-pointer">
+<div class="relative shrink-0">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-14 shadow-sm" data-alt="Portrait of Sarah Jenkins smiling professionally" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD80gnqu5ArY1Ilub2C7pQQBntoFlWa3Cn3O8qjKoCEwdz6N1nzE_GYgj74LXPDSUPXLU4SJMCNCC0Y-YcgH0IpHTqVC6o5ZoDP1h495lTjJ5cYKvSnoHWG_nZrB_oKgwmQg2cQtw2izFF55QtuiYjqOi2ZZpJ8_rpKS-rHKdUXo-GfWJrGSVtQONjdAZCAOtuwDXNJ4rmhTfp3LGgD6uxLGh7qxWN7VyNyLy5Pw80Y8PTnMlV3mrRQOIKlacNNpLAVZ9JwDgswu8eq");'>
+</div>
+<div class="absolute bottom-0.5 right-0.5 size-3.5 rounded-full bg-[#07884a] border-2 border-background-light dark:border-background-dark"></div>
+</div>
+<div class="flex flex-col justify-center flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-0.5">
+<p class="text-text-main-light dark:text-text-main-dark text-base font-semibold leading-normal truncate">Sarah Jenkins (HR)</p>
+<p class="text-text-sub-light dark:text-text-sub-dark text-xs font-normal shrink-0 ml-2">10:45 AM</p>
+</div>
+<p class="text-text-main-light dark:text-text-main-dark text-sm font-medium leading-normal truncate">Your leave request is approved.</p>
+</div>
+<div class="shrink-0 flex items-center justify-center">
+<div class="size-3 rounded-full bg-primary"></div>
+</div>
+</div>
+<div class="group flex items-center gap-4 bg-background-light dark:bg-background-dark px-4 py-3 active:bg-primary/5 transition-colors cursor-pointer">
+<div class="relative shrink-0">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-14 shadow-sm" data-alt="Portrait of Mike Ross in business attire" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBw7a_0pieXBlrzjYYg8qYg9NIM6kFUM5t-hGmpYSDIgaa1wvduePkKQqn7AHXMt2MYI6XFeOW9DVNkm5Kx8GHHDCV4FTENYrAdiAzp3KPc3DaELhh2qh6crWgwlbfsTsZlJS3gxYX43DjOy3_Okw-qBqjr0kmrb4i8jgSY7DSiwFUDkTqSEoW0bIxDl05dZK_Axm4DULgn9vox6G9esoTttck-E_UpuYzccI9zJfKCfn5KhcaZEeSm9SDvX6mysMOnvH6_2sf7F21Z");'>
+</div>
+</div>
+<div class="flex flex-col justify-center flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-0.5">
+<p class="text-text-main-light dark:text-text-main-dark text-base font-semibold leading-normal truncate">Mike Ross</p>
+<p class="text-text-sub-light dark:text-text-sub-dark text-xs font-normal shrink-0 ml-2">Tue</p>
+</div>
+<div class="flex items-center gap-1 text-text-sub-light dark:text-text-sub-dark">
+<span class="material-symbols-outlined text-[16px]">done_all</span>
+<p class="text-sm font-normal leading-normal truncate">Can we meet at 3pm to discuss?</p>
+</div>
+</div>
+</div>
+<div class="group flex items-center gap-4 bg-background-light dark:bg-background-dark px-4 py-3 active:bg-primary/5 transition-colors cursor-pointer">
+<div class="relative shrink-0">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-14 shadow-sm" data-alt="Portrait of Alex Chen looking thoughtful" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCJ34RN5JldXWRDnBQnhQ_0nTW--2ysbB3_ra-zyTNW6YSwcvGFgbpuFuYUdurhIsamEcXb2Fm8kd2QeggewtMqweKsWuhTuIc4Vb5co0XS-oBIWP8scrbO3lHaxPjFXZpUDNbMVTQDiIOiBzsBKJ_NhDr3qjg1nErsLN9H61N6qix-H0lunNKcSrOaFoP0rMydy4OJzt__MwT6XPjr7Qw0UjYG9n9M0P90fyCGpWqbV3SOybRkR04uGYjVW2li6aCVKYatqITAQ4G2");'>
+</div>
+</div>
+<div class="flex flex-col justify-center flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-0.5">
+<p class="text-text-main-light dark:text-text-main-dark text-base font-semibold leading-normal truncate">Alex Chen</p>
+<p class="text-text-sub-light dark:text-text-sub-dark text-xs font-normal shrink-0 ml-2">Mon</p>
+</div>
+<p class="text-text-sub-light dark:text-text-sub-dark text-sm font-normal leading-normal truncate">Sent an attachment.</p>
+</div>
+</div>
+<div class="group relative flex items-center gap-4 bg-background-light dark:bg-background-dark px-4 py-3 active:bg-primary/5 transition-colors cursor-pointer">
+<div class="relative shrink-0">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-xl size-14 shadow-sm opacity-90" data-alt="Icon representing a team meeting or general discussion" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDXjVfD8f4EmjKyoA7O6ZPRXV3Q8WhVS1NnWXIf2PhH9Nsob1-A86cGBcgiIyQKPDj1rg3S1sKYog6wwhJz-5u6zyoxbPMAPo07Ue-7vSWSSJBcjnWz40xPZJZTY-Vl2-Mxd2lO9az7SGcOF8ACSPpOYuNid6ClM8sVE6cxOODk1hPB6QLV-_q9Ty48Y12AGI-_71ef-7JCCV9c4lZtm52ePbBV_hl0Y1P0npeVyOB4Ft2ozgRAuNLpjPNtISAm--kr1aGGFRRM66Im");'>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-white dark:bg-background-dark rounded-full p-0.5">
+<div class="bg-text-sub-light text-white rounded-full p-1 flex items-center justify-center size-5">
+<span class="material-symbols-outlined" style="font-size: 12px;">groups</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col justify-center flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-0.5">
+<p class="text-text-main-light dark:text-text-main-dark text-base font-semibold leading-normal truncate">Safety Committee</p>
+<p class="text-text-sub-light dark:text-text-sub-dark text-xs font-normal shrink-0 ml-2">Sun</p>
+</div>
+<p class="text-text-sub-light dark:text-text-sub-dark text-sm font-normal leading-normal truncate">Weekly sync is cancelled.</p>
+</div>
+</div>
+</div>
+<div class="fixed bottom-0 left-0 w-full z-50 bg-surface-light dark:bg-surface-dark border-t border-gray-200 dark:border-gray-800 pb-safe">
+<div class="flex items-center justify-around h-16 pb-2">
+<button class="flex flex-col items-center justify-center w-full h-full gap-1 pt-2 group">
+<span class="material-symbols-outlined text-text-sub-light dark:text-text-sub-dark group-hover:text-primary transition-colors">dashboard</span>
+<span class="text-[10px] font-medium text-text-sub-light dark:text-text-sub-dark group-hover:text-primary transition-colors">Dashboard</span>
+</button>
+<button class="flex flex-col items-center justify-center w-full h-full gap-1 pt-2 group">
+<div class="relative">
+<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform filled" data-weight="700">chat_bubble</span>
+<span class="absolute -top-1 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">4</span>
+</div>
+<span class="text-[10px] font-bold text-primary">Chat</span>
+</button>
+<button class="flex flex-col items-center justify-center w-full h-full gap-1 pt-2 group">
+<span class="material-symbols-outlined text-text-sub-light dark:text-text-sub-dark group-hover:text-primary transition-colors">check_circle</span>
+<span class="text-[10px] font-medium text-text-sub-light dark:text-text-sub-dark group-hover:text-primary transition-colors">Task</span>
+</button>
+<button class="flex flex-col items-center justify-center w-full h-full gap-1 pt-2 group">
+<span class="material-symbols-outlined text-text-sub-light dark:text-text-sub-dark group-hover:text-primary transition-colors">description</span>
+<span class="text-[10px] font-medium text-text-sub-light dark:text-text-sub-dark group-hover:text-primary transition-colors">Document</span>
+</button>
+<button class="flex flex-col items-center justify-center w-full h-full gap-1 pt-2 group">
+<span class="material-symbols-outlined text-text-sub-light dark:text-text-sub-dark group-hover:text-primary transition-colors">policy</span>
+<span class="text-[10px] font-medium text-text-sub-light dark:text-text-sub-dark group-hover:text-primary transition-colors">Compliance</span>
+</button>
+<button class="flex flex-col items-center justify-center w-full h-full gap-1 pt-2 group">
+<span class="material-symbols-outlined text-text-sub-light dark:text-text-sub-dark group-hover:text-primary transition-colors">settings</span>
+<span class="text-[10px] font-medium text-text-sub-light dark:text-text-sub-dark group-hover:text-primary transition-colors">Settings</span>
+</button>
+</div>
+<div class="h-5 w-full"></div>
+</div>
+</div>
+
+</body></html>

@@ -1,0 +1,459 @@
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Compliance Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Noto+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#1e40af', // Blue 800 - Deep Blue
+                            50: '#eff6ff',
+                            100: '#dbeafe', // Secondary light blue
+                            200: '#bfdbfe',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a', // Deepest blue
+                        },
+                        secondary: '#dbeafe',
+                        background: '#f8fafc', // Slate 50
+                        surface: '#ffffff',
+                        border: '#e2e8f0', // Slate 200
+                        text: {
+                            main: '#0f172a', // Slate 900
+                            muted: '#64748b', // Slate 500
+                        }
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"],
+                        "body": ["Noto Sans", "sans-serif"],
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.75rem",
+                        "xl": "1rem", 
+                        "2xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                        'card': '0 0 1px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.08)',
+                        'floating': '0 10px 40px -10px rgba(0,0,0,0.1)'
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }input[type="checkbox"]:checked {
+            background-color: #2563eb;
+            border-color: #2563eb;
+        }
+    </style>
+</head>
+<body class="bg-background text-text-main font-display overflow-hidden antialiased">
+<div class="flex h-screen w-full overflow-hidden">
+<div class="hidden md:flex w-64 flex-col bg-white border-r border-slate-200 h-full font-body shrink-0 z-20">
+<div class="p-6 pb-2">
+<div class="flex items-center gap-3 mb-8">
+<div class="bg-primary p-2 rounded-lg text-white shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-2xl">admin_panel_settings</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-slate-900 text-lg font-extrabold tracking-tight leading-none">ORGIT</h1>
+<span class="text-[10px] text-slate-500 font-medium">Enterprise Admin</span>
+</div>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] text-slate-400 group-hover:text-slate-600 transition-colors">grid_view</span>
+<span class="font-medium text-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] text-slate-400 group-hover:text-slate-600 transition-colors">check_circle</span>
+<span class="font-medium text-sm">Tasks</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] text-slate-400 group-hover:text-slate-600 transition-colors">description</span>
+<span class="font-medium text-sm">Documents</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary text-white shadow-md shadow-primary/20 group" href="#">
+<span class="material-symbols-outlined text-[22px]">verified_user</span>
+<span class="font-medium text-sm">Compliance</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] text-slate-400 group-hover:text-slate-600 transition-colors">group</span>
+<span class="font-medium text-sm">Users</span>
+</a>
+<div class="px-3 pt-6 pb-2">
+<p class="text-xs font-bold text-slate-400 uppercase tracking-wider">System</p>
+</div>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] text-slate-400 group-hover:text-slate-600 transition-colors">settings</span>
+<span class="font-medium text-sm">Configuration</span>
+</a>
+<div class="pl-[11px] space-y-1 pt-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors pl-11" href="#">
+<span class="font-medium text-sm">Notifications</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors pl-11" href="#">
+<span class="font-medium text-sm">Auto Escalation</span>
+</a>
+</div>
+</nav>
+</div>
+<div class="mt-auto p-4 border-t border-slate-100">
+<div class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50/50">
+<div class="size-9 rounded-full bg-cover bg-center border border-slate-200" data-alt="User profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuASOcCNNlFiJDSBt3iGwqNEAfWFM0m51kNrNjkm3pgjpRD6_UeKHde_5zhtMKyl8RcYrGaYgXsqKszvL9Hs_0SBV2MyoYwAd0h5HmQP5tIhYp1I4LuK1PL3vXrsWv-hnIrfQeA4b5vEt-ZnuPRUhjZh43WYyKH7hkaoypZov4FScZA6n1TELwG1lmVsDd1bcXZaeknS9LESKeRQ1tL8ftRMiErEjNdDOQT0Cnk-YpQRF2VcyVjm8VS4c0pYkUacuL2hMO5wrKBA49WW");'></div>
+<div class="min-w-0">
+<p class="text-sm font-bold text-slate-900 truncate">Alex Morgan</p>
+<p class="text-xs text-slate-500 truncate">admin@orgit.com</p>
+</div>
+</div>
+</div>
+</div>
+<div class="flex-1 flex flex-col h-full overflow-hidden relative bg-background">
+<header class="h-16 border-b border-border bg-surface/80 backdrop-blur-md flex items-center justify-between px-8 shrink-0 z-10 sticky top-0">
+<div class="flex items-center gap-4">
+<button class="md:hidden text-text-main">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="flex items-center gap-2 text-sm text-text-muted">
+<span>Dashboard</span>
+<span class="material-symbols-outlined text-base">chevron_right</span>
+<span class="font-semibold text-text-main">Compliance Management</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[18px]">search</span>
+<input class="bg-slate-100 border border-transparent hover:border-border focus:border-primary-600 rounded-full py-2 pl-10 pr-4 text-sm text-text-main focus:ring-0 focus:outline-none w-64 placeholder:text-text-muted transition-all" placeholder="Search regulations..." type="text"/>
+</div>
+<button class="relative text-text-muted hover:text-primary-700 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0.5 right-0.5 size-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+</button>
+<button class="text-text-muted hover:text-primary-700 transition-colors">
+<span class="material-symbols-outlined">help</span>
+</button>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto p-6 md:p-8 pb-20 scroll-smooth flex gap-8">
+<div class="flex-1 space-y-8">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h1 class="text-2xl md:text-3xl font-extrabold text-text-main tracking-tight mb-2">Compliance Repository</h1>
+<p class="text-text-muted text-sm">Monitor regulations, track acts, and manage recurring compliance tasks.</p>
+</div>
+<button class="bg-primary hover:bg-primary-700 text-white font-semibold py-2.5 px-6 rounded-lg flex items-center gap-2 transition-all shadow-lg shadow-primary/20 active:scale-95">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span>Add Regulation</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between h-36 relative overflow-hidden group">
+<div class="z-10">
+<h3 class="text-slate-500 font-medium text-sm mb-1">Total Acts</h3>
+<div class="flex items-end gap-3">
+<p class="text-4xl font-bold text-slate-900">48</p>
+<span class="text-xs font-bold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full mb-1">All Systems</span>
+</div>
+</div>
+<div class="absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-slate-50 to-transparent"></div>
+<div class="absolute right-4 top-1/2 -translate-y-1/2">
+<span class="material-symbols-outlined text-6xl text-slate-100">gavel</span>
+</div>
+</div>
+<div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between h-36 relative overflow-hidden group">
+<div class="z-10">
+<h3 class="text-slate-500 font-medium text-sm mb-1">Upcoming Filings</h3>
+<div class="flex items-end gap-3">
+<p class="text-4xl font-bold text-slate-900">12</p>
+<span class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full mb-1">Next 7 Days</span>
+</div>
+</div>
+<div class="absolute -right-4 top-1/2 -translate-y-1/2 flex gap-1 opacity-20">
+<div class="size-16 rounded-full bg-amber-400"></div>
+<div class="size-10 rounded-full bg-amber-400 mt-6"></div>
+</div>
+</div>
+<div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between h-36 relative overflow-hidden group">
+<div class="z-10">
+<h3 class="text-slate-500 font-medium text-sm mb-1">Non-Compliant</h3>
+<div class="flex items-end gap-3">
+<p class="text-4xl font-bold text-slate-900">3</p>
+<span class="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full mb-1">Action Required</span>
+</div>
+</div>
+<div class="absolute right-4 bottom-4 opacity-10">
+<span class="material-symbols-outlined text-8xl text-red-500">warning</span>
+</div>
+</div>
+<div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between h-36 relative overflow-hidden group">
+<div class="z-10">
+<h3 class="text-slate-500 font-medium text-sm mb-1">Fully Compliant</h3>
+<div class="flex items-end gap-3">
+<p class="text-4xl font-bold text-slate-900">94%</p>
+<span class="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full mb-1">Audit Score</span>
+</div>
+</div>
+<div class="absolute right-4 bottom-4 opacity-10">
+<span class="material-symbols-outlined text-8xl text-green-500">verified</span>
+</div>
+</div>
+</div>
+<div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+<div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="flex items-center gap-2">
+<button class="px-4 py-2 bg-primary text-white rounded-full text-sm font-semibold shadow-sm">All Items</button>
+<button class="px-4 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-full text-sm font-medium transition-colors">Taxation</button>
+<button class="px-4 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-full text-sm font-medium transition-colors">Legal</button>
+<button class="px-4 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-full text-sm font-medium transition-colors flex items-center gap-2 border border-slate-200">
+<span class="material-symbols-outlined text-lg">filter_list</span>
+                        Filter
+                    </button>
+</div>
+<div class="flex items-center gap-2 text-sm text-slate-500">
+<span class="uppercase text-xs font-bold tracking-wider">Sort By:</span>
+<button class="flex items-center gap-1 font-semibold text-slate-900">
+                        Priority
+                        <span class="material-symbols-outlined text-lg">expand_more</span>
+</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-slate-50/50 text-xs uppercase font-bold text-slate-400 tracking-wider">
+<tr>
+<th class="px-6 py-4">Compliance Item</th>
+<th class="px-6 py-4">Authority</th>
+<th class="px-6 py-4">Last Updated</th>
+<th class="px-6 py-4">Status</th>
+<th class="px-6 py-4 text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100">
+<tr class="hover:bg-slate-50/50 transition-colors group cursor-pointer">
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold text-slate-900 text-sm mb-1">GST Regulations</span>
+<span class="text-xs text-slate-500">Finance • Tax Filing</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="size-6 rounded bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600">IN</div>
+<span class="text-sm font-medium text-slate-700">CBIC / MOF</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-900">Oct 20, 2023</span>
+<span class="text-xs text-slate-400">Amended</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-50 text-green-600 border border-green-100">
+<span class="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5"></span>
+                                    Compliant
+                                </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-primary-600 hover:text-primary-800 text-sm font-semibold flex items-center justify-end gap-1">
+<span class="material-symbols-outlined text-base">repeat</span>
+                                    Link Recurring
+                                </button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 transition-colors group cursor-pointer bg-blue-50/30">
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-bold text-slate-900 text-sm">Income Tax Act</span>
+</div>
+<span class="text-xs text-slate-500 mt-1">Finance • Direct Tax</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="size-6 rounded bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600">IN</div>
+<span class="text-sm font-medium text-slate-700">CBDT</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-900">Nov 05, 2023</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-600 border border-blue-100">
+<span class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5"></span>
+                                    Linked (Active)
+                                </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-slate-600 text-sm font-medium flex items-center justify-end gap-1">
+<span class="material-symbols-outlined text-base">edit</span>
+                                    Edit Link
+                                </button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 transition-colors group cursor-pointer">
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold text-slate-900 text-sm mb-1">ROC Guidelines</span>
+<span class="text-xs text-slate-500">Legal • Corporate Governance</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="size-6 rounded bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600">IN</div>
+<span class="text-sm font-medium text-slate-700">MCA</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-900">Sep 01, 2023</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-600 border border-amber-100">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>
+                                    Review Due
+                                </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-primary-600 hover:text-primary-800 text-sm font-semibold flex items-center justify-end gap-1">
+<span class="material-symbols-outlined text-base">repeat</span>
+                                    Link Recurring
+                                </button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 transition-colors group cursor-pointer">
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold text-slate-900 text-sm mb-1">Labour Code Compliance</span>
+<span class="text-xs text-slate-500">HR • Employment</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="size-6 rounded bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600">ST</div>
+<span class="text-sm font-medium text-slate-700">State Labour Dept</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-900">Aug 15, 2023</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-50 text-green-600 border border-green-100">
+<span class="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5"></span>
+                                    Compliant
+                                </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-primary-600 hover:text-primary-800 text-sm font-semibold flex items-center justify-end gap-1">
+<span class="material-symbols-outlined text-base">repeat</span>
+                                    Link Recurring
+                                </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="hidden lg:flex w-96 shrink-0 flex-col gap-6 sticky top-0 h-fit bg-white rounded-2xl shadow-floating border border-slate-100 p-6">
+<div class="flex items-center justify-between mb-2">
+<h2 class="text-lg font-bold text-slate-900">Link Compliance Task</h2>
+<button class="text-slate-400 hover:text-slate-600">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="bg-blue-50 border border-blue-100 p-4 rounded-xl flex items-start gap-3">
+<span class="material-symbols-outlined text-primary-600 mt-0.5">info</span>
+<div>
+<p class="text-xs font-bold text-primary-800 uppercase mb-0.5">Selected Regulation</p>
+<p class="text-sm font-bold text-slate-800">Income Tax Act</p>
+<p class="text-xs text-slate-500 mt-1">Configure recurring tasks associated with this compliance item.</p>
+</div>
+</div>
+<div class="space-y-4">
+<div>
+<label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">Task Title</label>
+<input class="w-full text-sm rounded-lg border-slate-200 focus:border-primary focus:ring-primary" placeholder="e.g. Quarterly TDS Return Filing" type="text" value="Quarterly TDS Return Filing"/>
+</div>
+<div>
+<label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">Description</label>
+<textarea class="w-full text-sm rounded-lg border-slate-200 focus:border-primary focus:ring-primary resize-none" placeholder="Add details..." rows="3">Ensure all TDS deductions for the quarter are filed with Form 26Q.</textarea>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">Frequency</label>
+<select class="w-full text-sm rounded-lg border-slate-200 focus:border-primary focus:ring-primary">
+<option>Quarterly</option>
+<option>Monthly</option>
+<option>Annually</option>
+</select>
+</div>
+<div>
+<label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">Priority</label>
+<select class="w-full text-sm rounded-lg border-slate-200 focus:border-primary focus:ring-primary">
+<option>High</option>
+<option>Medium</option>
+<option>Low</option>
+</select>
+</div>
+</div>
+<div>
+<label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">Next Due Date</label>
+<div class="relative">
+<input class="w-full text-sm rounded-lg border-slate-200 focus:border-primary focus:ring-primary pl-3 pr-10" placeholder="mm/dd/yyyy" type="text" value="12/31/2023"/>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">calendar_today</span>
+</div>
+</div>
+<div>
+<label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">Assigned To</label>
+<div class="flex items-center gap-2 p-2 rounded-lg border border-slate-200">
+<div class="flex items-center gap-1.5 bg-primary-50 text-primary-700 px-2 py-0.5 rounded text-xs font-semibold">
+<div class="size-5 rounded-full bg-cover bg-center" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuASOcCNNlFiJDSBt3iGwqNEAfWFM0m51kNrNjkm3pgjpRD6_UeKHde_5zhtMKyl8RcYrGaYgXsqKszvL9Hs_0SBV2MyoYwAd0h5HmQP5tIhYp1I4LuK1PL3vXrsWv-hnIrfQeA4b5vEt-ZnuPRUhjZh43WYyKH7hkaoypZov4FScZA6n1TELwG1lmVsDd1bcXZaeknS9LESKeRQ1tL8ftRMiErEjNdDOQT0Cnk-YpQRF2VcyVjm8VS4c0pYkUacuL2hMO5wrKBA49WW");'></div>
+<span>John D.</span>
+<button class="text-primary-400 hover:text-primary-600"><span class="material-symbols-outlined text-[14px]">close</span></button>
+</div>
+<input class="flex-1 text-sm border-none p-0 focus:ring-0 text-slate-600 placeholder:text-slate-400" placeholder="Add member.." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-2 mt-2">
+<input checked="" class="rounded border-slate-300 text-primary focus:ring-primary" type="checkbox"/>
+<label class="text-sm text-slate-600">Send reminder emails 3 days before</label>
+</div>
+</div>
+<div class="pt-4 flex gap-3">
+<button class="flex-1 bg-primary hover:bg-primary-700 text-white font-semibold py-2.5 rounded-lg shadow-md shadow-primary/20 transition-all">Save Schedule</button>
+<button class="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold py-2.5 rounded-lg transition-all">Cancel</button>
+</div>
+</div>
+</main>
+</div>
+</div>
+</body></html>

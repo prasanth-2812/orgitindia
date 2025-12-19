@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Document Management Home</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {primary: "#7c03b9", "background-light": "#f7f5f8", "background-dark": "#1c0f23", "surface-light": "#ffffff", "surface-dark": "#1a2e22"}, fontFamily: {display: "Public Sans"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}}}};</script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        body {
+            font-family: "Public Sans", sans-serif;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white transition-colors duration-200">
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden pb-24">
+<div class="sticky top-0 z-20 flex items-center justify-between bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm p-4 pb-2 transition-colors">
+<div class="flex items-center gap-3">
+<div class="relative">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 border-2 border-primary" data-alt="User profile avatar showing a professional person smiling" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD6kUqionXvfxqOWDD4_XKS3fxhDDnmdLNb0R9sQXtLaRImRkEah1OtdguSQJbn3xYFiCcrm_ACIHRd3KlIKj0NcYext9iiRGdajzqt8QLyVHhvZq9ZNVgd-dTaPrOMK8zVXl-QFMooLcK2jMljMmuN31B1OUNnJfeM7r2V-Vwg_bGko0UeMbt_wofHGyQP4wBwXwJkgCRjzFfZWt6Nkskt1rakbr6nW_VFruDjdlDQF4PU48hyBjQFJ2x-DWLDffhA603u7ZRb_w5A");'>
+</div>
+<div class="absolute bottom-0 right-0 size-3 bg-primary rounded-full border-2 border-background-light dark:border-background-dark"></div>
+</div>
+<div>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight">Documents</h2>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium">Good morning, Sarah</p>
+</div>
+</div>
+<button class="flex items-center justify-center size-10 rounded-full bg-surface-light dark:bg-surface-dark shadow-sm text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-opacity-80 transition-colors">
+<span class="material-symbols-outlined text-[24px]">notifications</span>
+</button>
+</div>
+<div class="px-4 py-2">
+<div class="flex w-full items-center rounded-xl bg-surface-light dark:bg-surface-dark shadow-sm border border-slate-100 dark:border-slate-800 h-12 overflow-hidden transition-colors">
+<div class="flex items-center justify-center pl-4 text-slate-400 dark:text-slate-500">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="flex w-full min-w-0 flex-1 bg-transparent border-none focus:ring-0 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 px-3 text-base font-normal h-full" placeholder="Search files, templates..."/>
+<button class="pr-4 text-primary">
+<span class="material-symbols-outlined">tune</span>
+</button>
+</div>
+</div>
+<div class="flex flex-col pt-6">
+<div class="flex items-center justify-between px-4 pb-3">
+<h3 class="text-slate-900 dark:text-white text-lg font-bold leading-tight">Default Templates</h3>
+<button class="text-primary text-sm font-semibold">View all</button>
+</div>
+<div class="flex w-full overflow-x-auto hide-scrollbar px-4 pb-2 gap-4">
+<button class="flex flex-col gap-2 min-w-[80px] group">
+<div class="w-full aspect-square rounded-2xl bg-primary/10 flex items-center justify-center group-active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-primary text-[32px]">receipt_long</span>
+</div>
+<p class="text-slate-700 dark:text-slate-300 text-xs font-medium text-center">Accounting</p>
+</button>
+<button class="flex flex-col gap-2 min-w-[80px] group">
+<div class="w-full aspect-square rounded-2xl bg-orange-500/10 flex items-center justify-center group-active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-orange-500 text-[32px]">request_quote</span>
+</div>
+<p class="text-slate-700 dark:text-slate-300 text-xs font-medium text-center">Expenses</p>
+</button>
+<button class="flex flex-col gap-2 min-w-[80px] group">
+<div class="w-full aspect-square rounded-2xl bg-purple-500/10 flex items-center justify-center group-active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-purple-500 text-[32px]">gavel</span>
+</div>
+<p class="text-slate-700 dark:text-slate-300 text-xs font-medium text-center">Contracts</p>
+</button>
+<button class="flex flex-col gap-2 min-w-[80px] group">
+<div class="w-full aspect-square rounded-2xl bg-teal-500/10 flex items-center justify-center group-active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-teal-500 text-[32px]">campaign</span>
+</div>
+<p class="text-slate-700 dark:text-slate-300 text-xs font-medium text-center">Marketing</p>
+</button>
+<button class="flex flex-col gap-2 min-w-[80px] group">
+<div class="w-full aspect-square rounded-2xl bg-slate-500/10 flex items-center justify-center group-active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-slate-500 text-[32px]">more_horiz</span>
+</div>
+<p class="text-slate-700 dark:text-slate-300 text-xs font-medium text-center">More</p>
+</button>
+</div>
+</div>
+<div class="flex flex-col pt-4">
+<div class="flex items-center justify-between px-4 pb-3">
+<h3 class="text-slate-900 dark:text-white text-lg font-bold leading-tight">Categories</h3>
+<div class="flex bg-slate-200 dark:bg-slate-700 rounded-lg p-0.5">
+<button class="p-1 rounded bg-white dark:bg-slate-600 shadow-sm text-slate-900 dark:text-white">
+<span class="material-symbols-outlined text-[18px]">grid_view</span>
+</button>
+<button class="p-1 rounded text-slate-500 dark:text-slate-400">
+<span class="material-symbols-outlined text-[18px]">list</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3 px-4">
+<div class="flex flex-col p-3 rounded-xl bg-surface-light dark:bg-surface-dark shadow-sm border border-slate-100 dark:border-slate-800 active:bg-slate-50 dark:active:bg-opacity-80 transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="material-symbols-outlined text-primary text-[28px]">folder_shared</span>
+<span class="text-xs font-semibold text-slate-400">12</span>
+</div>
+<h4 class="font-semibold text-slate-900 dark:text-white text-sm">Shared</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Team Projects</p>
+</div>
+<div class="flex flex-col p-3 rounded-xl bg-surface-light dark:bg-surface-dark shadow-sm border border-slate-100 dark:border-slate-800 active:bg-slate-50 dark:active:bg-opacity-80 transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="material-symbols-outlined text-yellow-500 text-[28px]">folder_special</span>
+<span class="text-xs font-semibold text-slate-400">5</span>
+</div>
+<h4 class="font-semibold text-slate-900 dark:text-white text-sm">Personal</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">My Drafts</p>
+</div>
+<div class="flex flex-col p-3 rounded-xl bg-surface-light dark:bg-surface-dark shadow-sm border border-slate-100 dark:border-slate-800 active:bg-slate-50 dark:active:bg-opacity-80 transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="material-symbols-outlined text-red-400 text-[28px]">shield</span>
+<span class="text-xs font-semibold text-slate-400">3</span>
+</div>
+<h4 class="font-semibold text-slate-900 dark:text-white text-sm">Compliance</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Policies</p>
+</div>
+<div class="flex flex-col p-3 rounded-xl bg-surface-light dark:bg-surface-dark shadow-sm border border-slate-100 dark:border-slate-800 active:bg-slate-50 dark:active:bg-opacity-80 transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="material-symbols-outlined text-slate-400 text-[28px]">admin_panel_settings</span>
+<span class="text-xs font-semibold text-slate-400">8</span>
+</div>
+<h4 class="font-semibold text-slate-900 dark:text-white text-sm">Admin</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Staff Only</p>
+</div>
+</div>
+</div>
+<div class="flex flex-col pt-6">
+<h3 class="text-slate-900 dark:text-white text-lg font-bold leading-tight px-4 pb-3">Recent Files</h3>
+<div class="flex flex-col px-4 gap-3">
+<div class="flex items-center gap-3 p-3 rounded-xl bg-surface-light dark:bg-surface-dark shadow-sm border border-slate-100 dark:border-slate-800 cursor-pointer">
+<div class="shrink-0 flex items-center justify-center size-12 bg-red-50 dark:bg-red-500/10 rounded-lg">
+<span class="material-symbols-outlined text-red-500">picture_as_pdf</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<p class="text-sm font-semibold text-slate-900 dark:text-white truncate">Q3_Financial_Report.pdf</p>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="text-xs text-slate-500 dark:text-slate-400">2.4 MB</span>
+<span class="size-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+<span class="text-xs text-slate-500 dark:text-slate-400">Edited 2h ago</span>
+</div>
+</div>
+<button class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="flex items-center gap-3 p-3 rounded-xl bg-surface-light dark:bg-surface-dark shadow-sm border border-slate-100 dark:border-slate-800 cursor-pointer">
+<div class="shrink-0 flex items-center justify-center size-12 bg-blue-50 dark:bg-blue-500/10 rounded-lg">
+<span class="material-symbols-outlined text-blue-500" style="color: #3b82f6;">description</span> 
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<p class="text-sm font-semibold text-slate-900 dark:text-white truncate">Employee_Handbook_2024.docx</p>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="text-xs text-slate-500 dark:text-slate-400">5.1 MB</span>
+<span class="size-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+<span class="text-xs text-slate-500 dark:text-slate-400">Yesterday</span>
+</div>
+</div>
+<button class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="flex items-center gap-3 p-3 rounded-xl bg-surface-light dark:bg-surface-dark shadow-sm border border-slate-100 dark:border-slate-800 cursor-pointer">
+<div class="shrink-0 size-12 rounded-lg overflow-hidden bg-slate-100">
+<img alt="Thumbnail of office layout plan" class="size-full object-cover" data-alt="Abstract blurry thumbnail of a document preview" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpuUbon9-yts8JvvIaYd7etdZHJ4HFxWz_vyoSVUB-RiQd58oTbwPCWsEeIG12uZ2QFxLwpOAdbNA3EY5JsaQOxrH0qXizdVitaiUcjVjgKW0MIHzj531jA6b6ouxFUapYNv-cQnSMF5jTZvoUaZw9cU5ZZ4UQOOwImEW97BH6Ig44YjE2vVPuwqSwbs0p0tYFg5F7F2kj0X6imRo8jYMSYO90iNj03g9lDwLinUY6attPPDaUMxNmunnC2O_GM9TL-CW219CN_Fmw"/>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<p class="text-sm font-semibold text-slate-900 dark:text-white truncate">Office_Layout_Plan_v2.png</p>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="text-xs text-slate-500 dark:text-slate-400">4.8 MB</span>
+<span class="size-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+<span class="text-xs text-slate-500 dark:text-slate-400">2 days ago</span>
+</div>
+</div>
+<button class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+<button class="fixed bottom-24 right-4 z-30 flex items-center justify-center size-14 rounded-full bg-primary text-[#0d1b12] shadow-lg shadow-primary/30 active:scale-95 transition-transform hover:brightness-105">
+<span class="material-symbols-outlined text-[28px]">add</span>
+</button>
+<div class="fixed bottom-0 left-0 z-40 w-full h-[80px] bg-surface-light dark:bg-surface-dark border-t border-slate-200 dark:border-slate-800 pb-5 pt-2 px-2 flex justify-between items-center">
+<button class="flex flex-col items-center gap-1 flex-1 min-w-0 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
+<span class="material-symbols-outlined text-[24px]">dashboard</span>
+<span class="text-[10px] font-medium truncate w-full text-center">Dashboard</span>
+</button>
+<button class="flex flex-col items-center gap-1 flex-1 min-w-0 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
+<span class="material-symbols-outlined text-[24px]">chat_bubble_outline</span>
+<span class="text-[10px] font-medium truncate w-full text-center">Chat</span>
+</button>
+<button class="flex flex-col items-center gap-1 flex-1 min-w-0 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
+<span class="material-symbols-outlined text-[24px]">task_alt</span>
+<span class="text-[10px] font-medium truncate w-full text-center">Task</span>
+</button>
+<button class="flex flex-col items-center gap-1 flex-1 min-w-0 text-primary">
+<span class="material-symbols-outlined text-[24px] fill-1">description</span>
+<span class="text-[10px] font-medium truncate w-full text-center">Document</span>
+</button>
+<button class="flex flex-col items-center gap-1 flex-1 min-w-0 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
+<span class="material-symbols-outlined text-[24px]">verified_user</span>
+<span class="text-[10px] font-medium truncate w-full text-center">Compliance</span>
+</button>
+<button class="flex flex-col items-center gap-1 flex-1 min-w-0 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+<span class="text-[10px] font-medium truncate w-full text-center">Settings</span>
+</button>
+</div>
+</div>
+</body></html>

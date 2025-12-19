@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Direct Chat Conversation</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#a413ec",
+                        "primary-dark": "#7c0eb2",
+                        "background-main": "#f8f9fa",
+                        "surface": "#ffffff",
+                        "bubble-incoming": "#ffffff",
+                        "text-main": "#1f2937",
+                        "text-body": "#374151",
+                        "text-muted": "#6b7280",
+                        "text-muted-light": "#9ca3af",
+                        "border-light": "#e5e7eb",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "1.5rem", "2xl": "2rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #d1d5db;
+            border-radius: 20px;
+        }.no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-main text-text-main font-display antialiased overflow-hidden selection:bg-primary selection:text-white">
+<div class="relative flex h-screen w-full flex-col mx-auto max-w-md bg-background-main shadow-2xl overflow-hidden border-x border-border-light/50">
+<header class="flex items-center justify-between px-4 py-3 bg-surface/90 backdrop-blur-sm z-20 border-b border-border-light shadow-sm">
+<div class="flex items-center gap-3">
+<button class="text-text-muted hover:text-primary transition-colors p-1 -ml-2">
+<span class="material-symbols-outlined">arrow_back_ios_new</span>
+</button>
+<div class="relative">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border border-border-light shadow-sm" data-alt="Portrait of Sarah" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuACAKL7jY9aD3WJxqrfAWV-9LzMuC8LB4nReN1HFevF0g2U3suYf-npQuydilU_nMpYM1TG_yQTQXS7_6W035IVwjrLfCUf9wCmAKMf0cFyLYUNyKBvGLHG1B9AkCLTIkhkZGE_6A_1YZELXRLdBKNI4L5X2T58ghwq2VP4QB3XKfFHHrZgwVgxn8vWC1Zzd89jCIdmk-5J5MarVl79IAvTYVGvWCgQmJnFPVeq0WB4P5heouwW05xY3tK70gcqSp_IK5jgjEoNbtEb");'></div>
+<div class="absolute bottom-0 right-0 size-3 bg-green-500 border-2 border-surface rounded-full"></div>
+</div>
+<div class="flex flex-col">
+<h2 class="text-text-main text-base font-bold leading-tight">Sarah Jenkins</h2>
+<span class="text-text-muted text-xs font-medium">Compliance Officer</span>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-2 text-text-muted hover:text-primary hover:bg-gray-100 transition-colors rounded-full">
+<span class="material-symbols-outlined" style="font-size: 24px;">videocam</span>
+</button>
+<button class="p-2 text-text-muted hover:text-primary hover:bg-gray-100 transition-colors rounded-full">
+<span class="material-symbols-outlined" style="font-size: 24px;">call</span>
+</button>
+<button class="p-2 text-text-muted hover:text-primary hover:bg-gray-100 transition-colors rounded-full">
+<span class="material-symbols-outlined" style="font-size: 24px;">info</span>
+</button>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto no-scrollbar p-4 flex flex-col gap-4 bg-background-main" style="background-image: radial-gradient(circle at 50% 50%, rgba(164, 19, 236, 0.04) 0%, transparent 60%);">
+<div class="flex justify-center py-2">
+<span class="bg-gray-200/70 text-text-muted-darker text-xs font-medium px-3 py-1 rounded-full shadow-sm">Today</span>
+</div>
+<div class="flex items-end gap-3 group">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-8 shrink-0 mb-1 shadow-sm" data-alt="Portrait of Sarah" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuB338VIklIraDez8F2ERxr2IEVro1ZAriCMvGjISUgHbD6Bhqu1V4scDg6YftSla5043CUL3rTNYGmlYlLC2PLefZ3Aid6grOMKpAOi57DbMxXkTvdkrD7l_FoZ0OU_wPqYm_EHGzF2Kx6wtuh9_Yt2mmmtcVRsN8gHJBfV2W5e7KoaLdul7UjB7kL7sdZUfMPkmUL2DXhtu-pk-Yhhhrk2CiTSXGl1nDm0f8LodPqFr8MjHwY9qPsTWvDg6PlnAh_L788YCE873MOY");'></div>
+<div class="flex flex-col gap-1 items-start max-w-[80%]">
+<div class="relative bg-bubble-incoming text-text-body px-4 py-3 rounded-2xl rounded-bl-none shadow-[0_2px_4px_rgba(0,0,0,0.05)] border border-border-light">
+<p class="text-[15px] font-normal leading-relaxed">Hi John, could you please review the updated compliance guidelines for the new site?</p>
+<span class="text-[10px] text-text-muted-light absolute bottom-1 right-3">09:41 AM</span>
+</div>
+</div>
+</div>
+<div class="flex items-end gap-3 justify-end group">
+<div class="flex flex-col gap-1 items-end max-w-[80%]">
+<div class="relative bg-primary text-white px-4 py-3 rounded-2xl rounded-br-none shadow-md shadow-primary/20">
+<p class="text-[15px] font-normal leading-relaxed">On it. Checking the data now.</p>
+<div class="flex items-center justify-end gap-1 mt-1">
+<span class="text-[10px] text-white/80">09:42 AM</span>
+<span class="material-symbols-outlined text-white/90 text-[14px]">done_all</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-end gap-3 group">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-8 shrink-0 mb-1 shadow-sm" data-alt="Portrait of Sarah" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCxWhpg4vgWcnrXwg8WT-dewOu1UQVleFa8dzh69DzJEFB8sV8KEppdk-Fiu3xFojmhSKYyyo2kAsOZcp1IHPjN038sAgcpracdyQ3XDXY7g-mO8ysPbJ5MNToLR98Mn7O4sQZgMQ4dIJL_oaHuU4nws7vsPpW4xhaT-ObAux00TxhQl0PsTy1Aeeq9ii6bMlr5YLjWqYEZWH5A2kV6TqlShHo5tKo-ymndTWs-MbWpR2rzGs8iXdKTlNr58o3taWJeBUb61iBN3du4");'></div>
+<div class="flex flex-col gap-1 items-start max-w-[85%]">
+<div class="bg-bubble-incoming p-1 rounded-2xl rounded-bl-none shadow-[0_2px_4px_rgba(0,0,0,0.05)] border border-border-light">
+<div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
+<div class="size-10 rounded-lg bg-red-50 flex items-center justify-center text-red-500">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</div>
+<div class="flex-1 min-w-0 pr-2">
+<p class="text-text-main text-sm font-semibold truncate">Compliance_v2_Final.pdf</p>
+<p class="text-text-muted text-xs">2.4 MB • PDF</p>
+</div>
+<button class="size-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-text-body transition-colors">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+</div>
+<div class="px-3 pb-2 pt-1">
+<p class="text-text-body text-xs">Updated version attached.</p>
+</div>
+</div>
+<span class="text-[10px] text-text-muted pl-1">09:43 AM</span>
+</div>
+</div>
+<div class="flex items-end gap-3 justify-end group">
+<div class="flex flex-col gap-1 items-end max-w-[85%]">
+<div class="bg-primary text-white p-3 rounded-2xl rounded-br-none shadow-md shadow-primary/20 w-64">
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center size-8 bg-white text-primary rounded-full shrink-0 shadow-sm hover:scale-105 transition-transform">
+<span class="material-symbols-outlined fill-1">play_arrow</span>
+</button>
+<div class="flex-1 flex items-center gap-[2px] h-6 overflow-hidden opacity-90">
+<div class="w-1 bg-white h-2 rounded-full"></div>
+<div class="w-1 bg-white h-4 rounded-full"></div>
+<div class="w-1 bg-white h-3 rounded-full"></div>
+<div class="w-1 bg-white h-5 rounded-full"></div>
+<div class="w-1 bg-white h-3 rounded-full"></div>
+<div class="w-1 bg-white h-6 rounded-full"></div>
+<div class="w-1 bg-white h-4 rounded-full"></div>
+<div class="w-1 bg-white h-2 rounded-full"></div>
+<div class="w-1 bg-white/50 h-3 rounded-full"></div>
+<div class="w-1 bg-white/50 h-2 rounded-full"></div>
+<div class="w-1 bg-white/50 h-4 rounded-full"></div>
+<div class="w-1 bg-white/50 h-2 rounded-full"></div>
+<div class="w-1 bg-white/50 h-3 rounded-full"></div>
+</div>
+<span class="text-xs font-medium tabular-nums text-white/90">0:14</span>
+</div>
+<div class="flex items-center justify-end gap-1 mt-2">
+<span class="material-symbols-outlined text-white/80 text-[14px]">done_all</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-end gap-3 justify-end group">
+<div class="flex flex-col gap-1 items-end max-w-[80%]">
+<div class="bg-primary p-1 rounded-2xl rounded-br-none shadow-md shadow-primary/20 overflow-hidden">
+<div class="relative w-full h-32 bg-gray-200 rounded-xl overflow-hidden mb-1 border border-white/10">
+<div class="absolute inset-0 bg-cover bg-center opacity-80 mix-blend-overlay" data-alt="Map view of city streets with a location pin" data-location="Downtown Sector 4" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBZbJY2DH2jwiMoZTvo8mFFufNVOHL3-CpbN2qwMuAk30VLnDD4uC1n2vt_0hsxYY2d9ZFenU-7ULwnj0yTz22Xtq3WGPV2_Y34cXat-2v7gqDBIUDe-ncxeex1FJ2rr2QjQFzKlPdSUaNoHbRQa1hYNQq9cOSYAa94i8jre7vzRG2a3Ou_6g0MGy79oeur3j54ye8tjOvpmZAJlTCUW7HpHgoDq0mjEiCn6kbhHLO_gZEY_HMONjARzi8Cgs7M2c1IBHpCzS7kfe5q");'></div>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="bg-primary/90 p-2 rounded-full shadow-lg border-2 border-white">
+<span class="material-symbols-outlined text-white text-xl">location_on</span>
+</div>
+</div>
+</div>
+<div class="px-3 py-2 text-white">
+<p class="text-sm font-semibold">Sector 4 HQ</p>
+<p class="text-xs opacity-90">I'm currently at this location.</p>
+</div>
+<div class="flex items-center justify-end gap-1 px-3 pb-2">
+<span class="text-[10px] text-white/80">09:45 AM</span>
+<span class="material-symbols-outlined text-white/80 text-[14px]">done</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-end gap-3 group">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-8 shrink-0 mb-1 shadow-sm" data-alt="Portrait of Sarah" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAaO2eODoRrX2DzosJzEP7UnGdSayI_4QZPdheb4MiQ8t0LwwaYhneqczpMIbkO4uxHmKhYCDl0nkaVPuXbbzlTYdE5Dyqk2LLJ6m21jJfPjG53KXRGR8qXF7sUiBPdG6dbN-CU3RTyEjcVSF73cFA1VhBDjR4Y5YkrHY1m9N8LdOYAC4hmL1q80ouaklR-cM-B8itDm4SZ8nxJ4Kbpnsw-_IC0vkFoHrq9fbS3ktUpO495znsHe8tOg13-cAg-olczUZ-J0T2LtTsX");'></div>
+<div class="flex flex-col gap-1 items-start max-w-[70%]">
+<div class="bg-bubble-incoming p-1 rounded-2xl rounded-bl-none shadow-[0_2px_4px_rgba(0,0,0,0.05)] border border-border-light overflow-hidden">
+<div class="bg-cover bg-center rounded-xl aspect-[4/3]" data-alt="Warehouse interior with shelves and boxes" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCwZjL4LuSdHnSI7fixaPBhYr_iVVEAcfq2c3HRTwm-_n1hFlgWFC8nmbAtRNAap77aGd6G78WuDa4i1v2ySvp-m9Y0L-OuBuYYetMg9yRb45jJJjCDpm_OFs5sQ13GQ8x1ouH8ipfiCspWNg9Zzn5Di6c7_whDMqcov-4-P7oMRJGXCeFf7dUJL5cPaNFeG18bQY9Rblzcqpx0JKx6V0IkepXphCLa26NVATTRqkFGY01eXUHRDtv6dl9CRON7r5JKLZ7yaa4XNes_");'></div>
+</div>
+<div class="-mt-4 ml-2 bg-white border border-border-light px-1.5 py-0.5 rounded-full shadow-md z-10 flex items-center gap-1">
+<span class="text-sm">👍</span>
+<span class="text-[10px] text-text-muted">1</span>
+</div>
+</div>
+</div>
+<div class="h-2"></div>
+</main>
+<footer class="bg-surface/90 backdrop-blur-md px-4 py-3 pb-6 border-t border-border-light z-20">
+<div class="flex items-end gap-3">
+<button class="text-text-muted hover:text-primary hover:bg-gray-100 transition-colors p-2 rounded-full mb-1">
+<span class="material-symbols-outlined text-[26px]">add_circle</span>
+</button>
+<div class="flex-1 bg-gray-100 border border-transparent hover:border-border-light rounded-[24px] px-4 py-2 flex items-center gap-2 focus-within:bg-white focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+<input class="bg-transparent border-none text-text-main placeholder-text-muted-light text-base w-full focus:ring-0 p-0 max-h-24 py-1" placeholder="Message..." type="text"/>
+<button class="text-text-muted hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined text-[20px]">sticky_note_2</span>
+</button>
+</div>
+<div class="flex gap-1 mb-1">
+<button class="text-text-muted hover:text-primary hover:bg-gray-100 transition-colors p-2 rounded-full">
+<span class="material-symbols-outlined text-[24px]">photo_camera</span>
+</button>
+<button class="bg-primary hover:bg-primary-dark transition-colors text-white rounded-full size-10 flex items-center justify-center shadow-lg shadow-primary/30 active:scale-95">
+<span class="material-symbols-outlined text-[20px] ml-0.5">mic</span>
+</button>
+</div>
+</div>
+</footer>
+</div>
+
+</body></html>

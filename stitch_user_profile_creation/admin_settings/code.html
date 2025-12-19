@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Admin Settings</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#a413ec",
+              "background-light": "#f7f6f8",
+              "background-dark": "#1c1022",
+              "surface-light": "#ffffff",
+              "surface-dark": "#2d2433",
+            },
+            fontFamily: {
+              "display": ["Public Sans", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #a413ec;
+            border-radius: 20px;
+        }.toggle-checkbox:checked {
+            right: 0;
+            border-color: #a413ec;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #a413ec;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#170d1b] dark:text-[#f3eef6] min-h-screen flex flex-col">
+<div class="sticky top-0 z-50 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800 transition-colors duration-200">
+<div class="flex items-center p-4 justify-between h-16 max-w-2xl mx-auto w-full">
+<button class="text-gray-800 dark:text-gray-100 flex size-10 shrink-0 items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+<span class="material-symbols-outlined text-[24px]">arrow_back</span>
+</button>
+<h2 class="text-gray-900 dark:text-white text-lg font-bold leading-tight tracking-tight flex-1 text-center pr-10">
+                Admin Settings
+            </h2>
+</div>
+</div>
+<div class="flex-1 w-full max-w-2xl mx-auto flex flex-col pb-28">
+<div class="px-4 py-4 sticky top-16 z-40 bg-background-light dark:bg-background-dark transition-colors duration-200">
+<label class="flex flex-col w-full h-12">
+<div class="flex w-full flex-1 items-stretch rounded-xl h-full shadow-sm bg-surface-light dark:bg-surface-dark overflow-hidden ring-1 ring-gray-200 dark:ring-gray-700 focus-within:ring-2 focus-within:ring-primary transition-all duration-200">
+<div class="text-primary flex items-center justify-center pl-4 pr-2">
+<span class="material-symbols-outlined text-[24px]">search</span>
+</div>
+<input class="flex w-full min-w-0 flex-1 resize-none overflow-hidden bg-transparent text-gray-900 dark:text-white focus:outline-0 border-none h-full placeholder:text-gray-400 dark:placeholder:text-gray-500 px-2 text-base font-normal leading-normal" placeholder="Search configuration..." type="text" value=""/>
+</div>
+</label>
+</div>
+<div class="mt-2">
+<h3 class="text-gray-900 dark:text-white tracking-tight text-lg font-bold leading-tight px-4 text-left pb-3 pt-4 flex items-center gap-2">
+<span class="w-1 h-5 bg-primary rounded-full"></span>
+                Organization &amp; Structure
+            </h3>
+<div class="px-4 flex flex-col gap-3">
+<button class="group flex items-center gap-4 bg-surface-light dark:bg-surface-dark p-3.5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 ring-1 ring-gray-100 dark:ring-gray-800 w-full text-left">
+<div class="flex items-center justify-center rounded-xl bg-primary/10 dark:bg-primary/20 shrink-0 size-12 text-primary group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[24px]">domain</span>
+</div>
+<div class="flex flex-col flex-1 overflow-hidden">
+<p class="text-gray-900 dark:text-white text-base font-semibold leading-snug truncate">Departments</p>
+<p class="text-gray-500 dark:text-gray-400 text-sm font-normal truncate">Manage business units</p>
+</div>
+<div class="shrink-0 text-gray-400 dark:text-gray-500">
+<span class="material-symbols-outlined text-[24px]">chevron_right</span>
+</div>
+</button>
+<button class="group flex items-center gap-4 bg-surface-light dark:bg-surface-dark p-3.5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 ring-1 ring-gray-100 dark:ring-gray-800 w-full text-left">
+<div class="flex items-center justify-center rounded-xl bg-primary/10 dark:bg-primary/20 shrink-0 size-12 text-primary group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[24px]">badge</span>
+</div>
+<div class="flex flex-col flex-1 overflow-hidden">
+<p class="text-gray-900 dark:text-white text-base font-semibold leading-snug truncate">Designations</p>
+<p class="text-gray-500 dark:text-gray-400 text-sm font-normal truncate">Job titles &amp; levels</p>
+</div>
+<div class="shrink-0 text-gray-400 dark:text-gray-500">
+<span class="material-symbols-outlined text-[24px]">chevron_right</span>
+</div>
+</button>
+<button class="group flex items-center gap-4 bg-surface-light dark:bg-surface-dark p-3.5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 ring-1 ring-gray-100 dark:ring-gray-800 w-full text-left">
+<div class="flex items-center justify-center rounded-xl bg-primary/10 dark:bg-primary/20 shrink-0 size-12 text-primary group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[24px]">account_tree</span>
+</div>
+<div class="flex flex-col flex-1 overflow-hidden">
+<p class="text-gray-900 dark:text-white text-base font-semibold leading-snug truncate">Reporting Hierarchy</p>
+<p class="text-gray-500 dark:text-gray-400 text-sm font-normal truncate">Visual reporting structure</p>
+</div>
+<div class="shrink-0 text-gray-400 dark:text-gray-500">
+<span class="material-symbols-outlined text-[24px]">chevron_right</span>
+</div>
+</button>
+</div>
+</div>
+<div class="mt-4">
+<h3 class="text-gray-900 dark:text-white tracking-tight text-lg font-bold leading-tight px-4 text-left pb-3 pt-4 flex items-center gap-2">
+<span class="w-1 h-5 bg-primary rounded-full"></span>
+                Employee Management
+            </h3>
+<div class="px-4 flex flex-col gap-3">
+<div class="flex gap-3">
+<button class="flex-1 group flex flex-col items-start gap-3 bg-surface-light dark:bg-surface-dark p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 ring-1 ring-gray-100 dark:ring-gray-800 text-left">
+<div class="flex items-center justify-center rounded-full bg-primary text-white shrink-0 size-10 shadow-lg shadow-primary/30 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[24px]">person_add</span>
+</div>
+<div>
+<p class="text-gray-900 dark:text-white text-base font-bold leading-snug">Add New</p>
+<p class="text-gray-500 dark:text-gray-400 text-xs font-normal mt-0.5">Onboard staff</p>
+</div>
+</button>
+<button class="flex-[2] group flex items-center gap-4 bg-surface-light dark:bg-surface-dark p-3.5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 ring-1 ring-gray-100 dark:ring-gray-800 text-left">
+<div class="flex items-center justify-center rounded-xl bg-primary/10 dark:bg-primary/20 shrink-0 size-12 text-primary">
+<span class="material-symbols-outlined text-[24px]">groups</span>
+</div>
+<div class="flex flex-col flex-1 overflow-hidden">
+<p class="text-gray-900 dark:text-white text-base font-semibold leading-snug truncate">Directory</p>
+<p class="text-gray-500 dark:text-gray-400 text-sm font-normal truncate">Manage all employees</p>
+</div>
+<div class="shrink-0 text-gray-400 dark:text-gray-500">
+<span class="material-symbols-outlined text-[24px]">chevron_right</span>
+</div>
+</button>
+</div>
+<button class="group flex items-center gap-4 bg-surface-light dark:bg-surface-dark p-3.5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 ring-1 ring-gray-100 dark:ring-gray-800 w-full text-left">
+<div class="flex items-center justify-center rounded-xl bg-primary/10 dark:bg-primary/20 shrink-0 size-12 text-primary group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[24px]">admin_panel_settings</span>
+</div>
+<div class="flex flex-col flex-1 overflow-hidden">
+<p class="text-gray-900 dark:text-white text-base font-semibold leading-snug truncate">Roles &amp; Permissions</p>
+<p class="text-gray-500 dark:text-gray-400 text-sm font-normal truncate">Access control setup</p>
+</div>
+<div class="shrink-0 text-gray-400 dark:text-gray-500">
+<span class="material-symbols-outlined text-[24px]">chevron_right</span>
+</div>
+</button>
+</div>
+</div>
+<div class="mt-4">
+<h3 class="text-gray-900 dark:text-white tracking-tight text-lg font-bold leading-tight px-4 text-left pb-3 pt-4 flex items-center gap-2">
+<span class="w-1 h-5 bg-primary rounded-full"></span>
+                Automation &amp; Config
+            </h3>
+<div class="px-4 flex flex-col gap-3">
+<div class="flex items-center gap-4 bg-surface-light dark:bg-surface-dark p-3.5 rounded-2xl shadow-sm ring-1 ring-gray-100 dark:ring-gray-800 w-full">
+<div class="flex items-center justify-center rounded-xl bg-primary/10 dark:bg-primary/20 shrink-0 size-12 text-primary">
+<span class="material-symbols-outlined text-[24px]">timer</span>
+</div>
+<div class="flex flex-col flex-1 overflow-hidden">
+<p class="text-gray-900 dark:text-white text-base font-semibold leading-snug truncate">Auto Escalation</p>
+<p class="text-gray-500 dark:text-gray-400 text-sm font-normal truncate">Trigger after 24 hours</p>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 peer checked:border-primary transition-all duration-300 right-6 checked:right-0 z-10" id="toggle-escalation" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-700 cursor-pointer peer-checked:bg-primary transition-colors duration-300" for="toggle-escalation"></label>
+</div>
+</div>
+<button class="group flex items-center gap-4 bg-surface-light dark:bg-surface-dark p-3.5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 ring-1 ring-gray-100 dark:ring-gray-800 w-full text-left">
+<div class="flex items-center justify-center rounded-xl bg-primary/10 dark:bg-primary/20 shrink-0 size-12 text-primary group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[24px]">notifications_active</span>
+</div>
+<div class="flex flex-col flex-1 overflow-hidden">
+<p class="text-gray-900 dark:text-white text-base font-semibold leading-snug truncate">Reminder Configuration</p>
+<p class="text-gray-500 dark:text-gray-400 text-sm font-normal truncate">Push &amp; Email alerts</p>
+</div>
+<div class="shrink-0 text-gray-400 dark:text-gray-500">
+<span class="material-symbols-outlined text-[24px]">chevron_right</span>
+</div>
+</button>
+<button class="group flex items-center gap-4 bg-surface-light dark:bg-surface-dark p-3.5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 ring-1 ring-gray-100 dark:ring-gray-800 w-full text-left">
+<div class="flex items-center justify-center rounded-xl bg-primary/10 dark:bg-primary/20 shrink-0 size-12 text-primary group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[24px]">event_repeat</span>
+</div>
+<div class="flex flex-col flex-1 overflow-hidden">
+<p class="text-gray-900 dark:text-white text-base font-semibold leading-snug truncate">Recurring Tasks</p>
+<p class="text-gray-500 dark:text-gray-400 text-sm font-normal truncate">Scheduled templates</p>
+</div>
+<div class="shrink-0 text-gray-400 dark:text-gray-500">
+<span class="material-symbols-outlined text-[24px]">chevron_right</span>
+</div>
+</button>
+</div>
+</div>
+<div class="mt-4 mb-8">
+<h3 class="text-gray-900 dark:text-white tracking-tight text-lg font-bold leading-tight px-4 text-left pb-3 pt-4 flex items-center gap-2">
+<span class="w-1 h-5 bg-primary rounded-full"></span>
+                Data Management
+            </h3>
+<div class="px-4">
+<button class="group flex items-center gap-4 bg-surface-light dark:bg-surface-dark p-3.5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 ring-1 ring-gray-100 dark:ring-gray-800 w-full text-left">
+<div class="flex items-center justify-center rounded-xl bg-primary/10 dark:bg-primary/20 shrink-0 size-12 text-primary group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[24px]">database</span>
+</div>
+<div class="flex flex-col flex-1 overflow-hidden">
+<p class="text-gray-900 dark:text-white text-base font-semibold leading-snug truncate">Entity Master Data</p>
+<p class="text-gray-500 dark:text-gray-400 text-sm font-normal truncate">Core system records</p>
+</div>
+<div class="shrink-0 text-gray-400 dark:text-gray-500">
+<span class="material-symbols-outlined text-[24px]">chevron_right</span>
+</div>
+</button>
+</div>
+</div>
+</div>
+<div class="fixed bottom-0 left-0 right-0 z-50 bg-surface-light/95 dark:bg-surface-dark/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 pb-5 pt-1">
+<div class="max-w-2xl mx-auto w-full px-1">
+<div class="grid grid-cols-6 h-12">
+<button class="flex flex-col items-center justify-center w-full h-full text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary transition-colors group">
+<span class="material-symbols-outlined text-[24px] mb-0.5 group-hover:-translate-y-0.5 transition-transform duration-200">dashboard</span>
+<span class="text-[10px] font-medium tracking-tight">Dashboard</span>
+</button>
+<button class="flex flex-col items-center justify-center w-full h-full text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary transition-colors group">
+<span class="material-symbols-outlined text-[24px] mb-0.5 group-hover:-translate-y-0.5 transition-transform duration-200">chat_bubble</span>
+<span class="text-[10px] font-medium tracking-tight">Chat</span>
+</button>
+<button class="flex flex-col items-center justify-center w-full h-full text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary transition-colors group">
+<span class="material-symbols-outlined text-[24px] mb-0.5 group-hover:-translate-y-0.5 transition-transform duration-200">task_alt</span>
+<span class="text-[10px] font-medium tracking-tight">Task</span>
+</button>
+<button class="flex flex-col items-center justify-center w-full h-full text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary transition-colors group">
+<span class="material-symbols-outlined text-[24px] mb-0.5 group-hover:-translate-y-0.5 transition-transform duration-200">description</span>
+<span class="text-[10px] font-medium tracking-tight">Document</span>
+</button>
+<button class="flex flex-col items-center justify-center w-full h-full text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary transition-colors group">
+<span class="material-symbols-outlined text-[24px] mb-0.5 group-hover:-translate-y-0.5 transition-transform duration-200">fact_check</span>
+<span class="text-[10px] font-medium tracking-tight w-full text-center px-0.5 truncate">Compliance</span>
+</button>
+<button class="flex flex-col items-center justify-center w-full h-full text-primary dark:text-primary transition-colors group relative">
+<span class="absolute -top-[5px] left-1/2 -translate-x-1/2 w-8 h-1 bg-primary rounded-b-full"></span>
+<span class="material-symbols-outlined text-[24px] mb-0.5" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="text-[10px] font-medium tracking-tight">Settings</span>
+</button>
+</div>
+</div>
+</div>
+</body></html>

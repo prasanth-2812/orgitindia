@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Create Task with Document Link</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#a413ec",
+              "background-light": "#f7f6f8",
+              "background-dark": "#1c1022",
+              "surface-light": "#faf8fc",
+            },
+            fontFamily: {
+              "display": ["Public Sans", "Noto Sans", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        /* Custom scrollbar to match theme */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #dfcfe7;
+            border-radius: 3px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #4a3b52;
+        }
+        /* Remove default date icon in some browsers to replace with custom if needed, keeping simple for now */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            filter: invert(0.5) sepia(1) saturate(5) hue-rotate(245deg);
+        }
+        .dark input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#170d1b] dark:text-gray-100 flex flex-col min-h-screen overflow-x-hidden selection:bg-primary/30 selection:text-primary">
+<!-- Top Navigation Bar -->
+<div class="sticky top-0 z-50 bg-surface-light/95 dark:bg-background-dark/95 backdrop-blur-md border-b border-[#dfcfe7] dark:border-gray-800 px-4 h-14 flex items-center justify-between transition-colors duration-300">
+<button class="text-base font-medium text-gray-500 hover:text-[#170d1b] dark:text-gray-400 dark:hover:text-white transition-colors">
+            Cancel
+        </button>
+<h2 class="text-lg font-bold text-[#170d1b] dark:text-white tracking-tight">Create Task</h2>
+<button class="text-base font-bold text-primary hover:text-primary/80 transition-colors">
+            Save
+        </button>
+</div>
+<!-- Main Form Content -->
+<main class="flex-1 w-full max-w-lg mx-auto p-4 pb-32 flex flex-col gap-6">
+<!-- Section: Basic Details -->
+<section class="flex flex-col gap-5">
+<!-- Task Title -->
+<label class="flex flex-col w-full gap-2">
+<p class="text-[#170d1b] dark:text-gray-200 text-base font-medium leading-normal">Task Title</p>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#170d1b] dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-[#dfcfe7] dark:border-gray-700 bg-surface-light dark:bg-gray-800 focus:border-primary h-14 placeholder:text-[#804c9a]/60 dark:placeholder:text-gray-500 p-[15px] text-base font-normal leading-normal transition-all shadow-sm" placeholder="Enter task name" value=""/>
+</label>
+<!-- Description -->
+<label class="flex flex-col w-full gap-2">
+<p class="text-[#170d1b] dark:text-gray-200 text-base font-medium leading-normal">Description</p>
+<textarea class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#170d1b] dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-[#dfcfe7] dark:border-gray-700 bg-surface-light dark:bg-gray-800 focus:border-primary min-h-32 placeholder:text-[#804c9a]/60 dark:placeholder:text-gray-500 p-[15px] text-base font-normal leading-normal transition-all shadow-sm" placeholder="Add details, instructions, or context..."></textarea>
+</label>
+</section>
+<!-- Section: Priority -->
+<section class="flex flex-col gap-2">
+<p class="text-[#170d1b] dark:text-gray-200 text-base font-medium leading-normal">Priority Level</p>
+<div class="flex h-12 w-full items-center justify-center rounded-lg bg-[#efe7f3] dark:bg-gray-800 p-1">
+<label class="flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-md px-2 has-[:checked]:bg-white dark:has-[:checked]:bg-gray-700 has-[:checked]:shadow-sm has-[:checked]:text-[#170d1b] dark:has-[:checked]:text-white text-[#804c9a] dark:text-gray-400 text-sm font-medium leading-normal transition-all">
+<span class="truncate">Low</span>
+<input class="invisible w-0" name="priority" type="radio" value="Low"/>
+</label>
+<label class="flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-md px-2 has-[:checked]:bg-white dark:has-[:checked]:bg-gray-700 has-[:checked]:shadow-sm has-[:checked]:text-[#170d1b] dark:has-[:checked]:text-white text-[#804c9a] dark:text-gray-400 text-sm font-medium leading-normal transition-all">
+<span class="truncate">Medium</span>
+<input checked="" class="invisible w-0" name="priority" type="radio" value="Medium"/>
+</label>
+<label class="flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-md px-2 has-[:checked]:bg-white dark:has-[:checked]:bg-gray-700 has-[:checked]:shadow-sm has-[:checked]:text-[#170d1b] dark:has-[:checked]:text-white text-[#804c9a] dark:text-gray-400 text-sm font-medium leading-normal transition-all">
+<span class="truncate">High</span>
+<input class="invisible w-0" name="priority" type="radio" value="High"/>
+</label>
+</div>
+</section>
+<!-- Section: Logistics -->
+<section class="grid grid-cols-1 gap-5">
+<!-- Assigned To -->
+<label class="flex flex-col w-full gap-2 relative group">
+<p class="text-[#170d1b] dark:text-gray-200 text-base font-medium leading-normal">Assigned To</p>
+<div class="relative">
+<select class="form-select w-full rounded-lg border border-[#dfcfe7] dark:border-gray-700 bg-surface-light dark:bg-gray-800 h-14 px-4 pr-10 text-[#170d1b] dark:text-white focus:border-primary focus:ring-2 focus:ring-primary/20 appearance-none shadow-sm cursor-pointer">
+<option class="text-gray-400" disabled="" selected="" value="">Select Employee or Role</option>
+<option value="1">Sarah Jenkins (Compliance)</option>
+<option value="2">Mike Ross (Logistics)</option>
+<option value="3">Operations Team</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-primary">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+</label>
+<!-- Frequency -->
+<label class="flex flex-col w-full gap-2 relative">
+<p class="text-[#170d1b] dark:text-gray-200 text-base font-medium leading-normal">Frequency</p>
+<div class="relative">
+<select class="form-select w-full rounded-lg border border-[#dfcfe7] dark:border-gray-700 bg-surface-light dark:bg-gray-800 h-14 px-4 pr-10 text-[#170d1b] dark:text-white focus:border-primary focus:ring-2 focus:ring-primary/20 appearance-none shadow-sm cursor-pointer">
+<option value="one-time">One-time Task</option>
+<option value="daily">Daily</option>
+<option value="weekly">Weekly</option>
+<option value="monthly">Monthly</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-primary">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+</label>
+</section>
+<!-- Section: Timeline -->
+<section class="flex flex-col gap-2">
+<p class="text-[#170d1b] dark:text-gray-200 text-base font-medium leading-normal">Timeline</p>
+<div class="grid grid-cols-2 gap-4">
+<label class="flex flex-col gap-1.5">
+<span class="text-xs font-bold text-[#804c9a] dark:text-primary/80 uppercase tracking-wide ml-1">Start Date</span>
+<input class="w-full h-12 rounded-lg border border-[#dfcfe7] dark:border-gray-700 bg-surface-light dark:bg-gray-800 text-[#170d1b] dark:text-white px-3 focus:border-primary focus:ring-0 shadow-sm" type="date"/>
+</label>
+<label class="flex flex-col gap-1.5">
+<span class="text-xs font-bold text-[#804c9a] dark:text-primary/80 uppercase tracking-wide ml-1">Due Date</span>
+<input class="w-full h-12 rounded-lg border border-[#dfcfe7] dark:border-gray-700 bg-surface-light dark:bg-gray-800 text-[#170d1b] dark:text-white px-3 focus:border-primary focus:ring-0 shadow-sm" type="date"/>
+</label>
+</div>
+</section>
+<!-- Section: Document Link (Key Feature) -->
+<section class="flex flex-col gap-3 mt-2">
+<div class="flex items-center justify-between">
+<h3 class="text-[#170d1b] dark:text-gray-100 text-base font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">folder_open</span>
+                    Linked Documents
+                </h3>
+</div>
+<!-- State A: Add Button -->
+<button class="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-xl border-2 border-dashed border-[#dfcfe7] dark:border-gray-600 bg-surface-light dark:bg-gray-800/50 p-6 transition-all hover:bg-white dark:hover:bg-gray-800 hover:border-primary hover:shadow-md">
+<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#efe7f3] dark:bg-gray-700 text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-2xl">add_link</span>
+</div>
+<div class="flex flex-col items-start text-left">
+<span class="text-base font-bold text-primary group-hover:underline decoration-2 underline-offset-2">Link from Library</span>
+<span class="text-xs text-gray-500 dark:text-gray-400">Attach procedures, policies, or guides</span>
+</div>
+</button>
+<!-- State B: Simulated Attached Document -->
+<div class="relative flex items-center gap-4 rounded-xl border border-[#dfcfe7] dark:border-gray-700 bg-white dark:bg-gray-800 p-3 shadow-sm transition-all hover:shadow-md">
+<!-- Document Icon with Abstract Graphic -->
+<div class="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-red-50 dark:bg-red-900/20">
+<span class="material-symbols-outlined text-red-500 dark:text-red-400 text-3xl">description</span>
+<!-- Decorative corner fold -->
+<div class="absolute top-0 right-0 h-4 w-4 bg-red-100 dark:bg-red-900/40 rounded-bl-lg"></div>
+<img class="hidden" data-alt="Abstract red document icon representing a PDF file" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAApvwpsTYTxtLPdbf-wuNj-el3y6yzSTeHD10RhLZ5ErNTwrO9dyUnCiVyjpREGgYMVgAtnBE8DNIKR81FjzhGlBwHeBoWkAJLS0pwfKqpQ6MIJUOLzEqmk6QUQ_IReF702gD_nNFj06l_4L3bp9QIOWCP42Uou1yh9-hRyIJw8LvwOmkEMBAfJOp5p2qWvdIERUE4wOTLnu2okex2UYUZPq60ygQUY1ZJG0ljWhxldZywkEyxxmd4fZBistQeTqDPAOTOxxqybj96"/>
+</div>
+<div class="flex flex-1 flex-col overflow-hidden">
+<p class="truncate text-sm font-bold text-[#170d1b] dark:text-white">Safety_Protocol_v4.pdf</p>
+<div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+<span>PDF</span>
+<span class="h-1 w-1 rounded-full bg-gray-300"></span>
+<span>2.4 MB</span>
+<span class="h-1 w-1 rounded-full bg-gray-300"></span>
+<span class="text-primary font-medium">Read Only</span>
+</div>
+</div>
+<button aria-label="Remove document" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 transition-colors">
+<span class="material-symbols-outlined text-xl">close</span>
+</button>
+</div>
+</section>
+</main>
+<!-- Sticky Bottom Action Button -->
+<div class="fixed bottom-0 left-0 w-full bg-surface-light dark:bg-background-dark border-t border-[#dfcfe7] dark:border-gray-800 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-40">
+<div class="max-w-lg mx-auto">
+<button class="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 text-center text-base font-bold text-white shadow-lg shadow-primary/25 transition-transform active:scale-[0.98] hover:bg-primary/90">
+<span>Create Task</span>
+<span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+</div>
+</div>
+</body></html>

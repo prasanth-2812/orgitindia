@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Add Organisation - Super Admin - ORGIT</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#1E40AF", // Deep blue
+              "primary-hover": "#1e3a8a",
+              "background-light": "#F8FAFC", // Slightly softer cool gray
+              "background-dark": "#0F172A",
+              "surface-light": "#FFFFFF",
+              "surface-dark": "#1E293B",
+              "border-light": "#E2E8F0",
+              "border-dark": "#334155",
+            },
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+            },
+            borderRadius: {
+              DEFAULT: "0.5rem",
+              'xl': '0.75rem',
+              '2xl': '1rem',
+            },
+            boxShadow: {
+                'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                'medium': '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025)',
+            }
+          },
+        },
+      };
+    </script>
+<style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-100 font-sans antialiased transition-colors duration-200">
+<div class="flex h-screen overflow-hidden">
+<aside class="w-64 bg-surface-light dark:bg-surface-dark border-r border-border-light dark:border-border-dark flex-shrink-0 flex flex-col transition-colors duration-200 z-20">
+<div class="h-20 flex items-center px-6 border-b border-border-light dark:border-border-dark">
+<div class="flex items-center gap-3">
+<div class="bg-primary text-white p-2 rounded-lg shadow-sm">
+<span class="material-symbols-outlined text-xl">admin_panel_settings</span>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-tight text-gray-900 dark:text-white leading-none">ORGIT</h1>
+<span class="text-xs text-gray-500 dark:text-gray-400 font-medium">Enterprise Admin</span>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+<a class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary dark:group-hover:text-white transition-colors">dashboard</span>
+<span class="font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-lg shadow-md transition-colors" href="#">
+<span class="material-symbols-outlined">domain</span>
+<span class="font-medium">Organisations</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary dark:group-hover:text-white transition-colors">description</span>
+<span class="font-medium">Document Management</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary dark:group-hover:text-white transition-colors">verified_user</span>
+<span class="font-medium">Compliance Management</span>
+</a>
+<div class="pt-6 pb-2 px-4">
+<p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">System</p>
+</div>
+<a class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary dark:group-hover:text-white transition-colors">settings</span>
+<span class="font-medium">Settings</span>
+</a>
+</nav>
+<div class="p-4 border-t border-border-light dark:border-border-dark">
+<div class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+<img alt="Super Admin" class="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-600" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOOipOic1PEzKwOpqAS297JJcJZhG4qh3GPAPxL7QkeopidRcVhwMDuUL--yPf-oZ6wLPLmudmTiUzsceYycMamuDJVgGCfG7zODaRyqrzkjjyc4HcDjx3_XFmlWXZBC0ta7jjMelmW-sMXxW9GTJIy88XByldkZQUh74TSGsHhFa8rNV7zTFdXH7U6-jm59z79xbeCRSRGd1H6SfbDQLqA3YkwmsfMNvKbZj9M-xnkcuclwbvfs1qP4j-wYge7V-KYjp3Rz3rWHI"/>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-semibold text-gray-900 dark:text-white truncate">Alexandra M.</p>
+<p class="text-xs text-gray-500 dark:text-gray-400 truncate">Super Admin</p>
+</div>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+<header class="h-20 bg-surface-light dark:bg-surface-dark flex items-center justify-between px-8 flex-shrink-0 border-b border-border-light dark:border-border-dark shadow-sm z-10">
+<nav class="flex items-center text-sm text-gray-500 dark:text-gray-400">
+<span class="material-symbols-outlined text-xl mr-2 text-gray-400">home</span>
+<span class="hover:text-gray-800 dark:hover:text-white transition-colors cursor-pointer">Dashboard</span>
+<span class="mx-2">/</span>
+<span class="hover:text-gray-800 dark:hover:text-white transition-colors cursor-pointer">Organisations</span>
+<span class="mx-2">/</span>
+<span class="font-semibold text-gray-900 dark:text-white">Add Organisation</span>
+</nav>
+<div class="flex items-center gap-4">
+<div class="relative hidden md:block group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg group-focus-within:text-primary transition-colors">search</span>
+<input class="pl-10 pr-4 py-2 bg-gray-50 dark:bg-surface-dark border border-gray-200 dark:border-border-dark rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary w-80 transition-all" placeholder="Search..." type="text"/>
+</div>
+<button class="relative p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-surface-light dark:border-surface-dark"></span>
+</button>
+<button class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full transition-colors">
+<span class="material-symbols-outlined">apps</span>
+</button>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark p-8">
+<div class="max-w-6xl mx-auto space-y-8 pb-12">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h2 class="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Add Organisation</h2>
+<p class="text-gray-500 dark:text-gray-400 mt-2 text-base">Configure organisation identity, admin access, and platform status.</p>
+</div>
+</div>
+<form class="space-y-6" onsubmit="event.preventDefault();">
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-soft border border-border-light dark:border-border-dark p-6">
+<h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 border-b border-gray-100 dark:border-gray-700 pb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">business</span>
+                  Organisation Basic Details
+                </h3>
+<div class="flex flex-col lg:flex-row gap-8">
+<div class="flex-shrink-0">
+<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Organisation Logo</label>
+<div class="w-32 h-32 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer group relative overflow-hidden">
+<input class="absolute inset-0 opacity-0 cursor-pointer" type="file"/>
+<span class="material-symbols-outlined text-3xl text-gray-400 group-hover:text-primary transition-colors">upload</span>
+<span class="text-xs text-gray-500 mt-2 text-center px-2">Click to upload</span>
+</div>
+</div>
+<div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="md:col-span-2">
+<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Organisation Name <span class="text-red-500">*</span></label>
+<input class="w-full px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-gray-400" placeholder="e.g. Acme Corp" type="text"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Organisation Email</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">mail</span>
+<input class="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-gray-400" placeholder="contact@company.com" type="email"/>
+</div>
+</div>
+<div>
+<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Organisation Mobile Number</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">call</span>
+<input class="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-gray-400" placeholder="+91 98765 43210" type="tel"/>
+</div>
+</div>
+<div class="md:col-span-2">
+<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+<select class="w-full px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-700 dark:text-gray-300">
+<option value="active">Active</option>
+<option value="suspended">Suspended</option>
+<option value="onboarding">Onboarding</option>
+</select>
+<p class="text-xs text-gray-500 mt-1">Controls the general operational status of the entity.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-soft border border-border-light dark:border-border-dark p-6">
+<h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 border-b border-gray-100 dark:border-gray-700 pb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">gavel</span>
+                  Legal &amp; Entity Information
+                </h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div>
+<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">GST Number</label>
+<input class="w-full px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all uppercase placeholder:text-gray-400" placeholder="22AAAAA0000A1Z5" type="text"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">PAN Number</label>
+<input class="w-full px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all uppercase placeholder:text-gray-400" placeholder="ABCDE1234F" type="text"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">CIN</label>
+<input class="w-full px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all uppercase placeholder:text-gray-400" placeholder="L12345MH2023PLC123456" type="text"/>
+</div>
+<div class="md:col-span-1">
+<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Accounting Year From</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">calendar_today</span>
+<input class="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" type="date"/>
+</div>
+</div>
+<div class="md:col-span-1">
+<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Accounting Year To</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">event</span>
+<input class="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" type="date"/>
+</div>
+</div>
+<div class="md:col-span-3">
+<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Registered Address</label>
+<textarea class="w-full px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-gray-400" placeholder="Enter full registered address..." rows="3"></textarea>
+</div>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-soft border border-border-light dark:border-border-dark p-6">
+<h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 border-b border-gray-100 dark:border-gray-700 pb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">manage_accounts</span>
+                  Primary Admin Details
+                </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div>
+<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Admin Name <span class="text-red-500">*</span></label>
+<input class="w-full px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="John Doe" type="text"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Admin Mobile Number <span class="text-xs text-gray-500 font-normal">(OTP Enabled)</span></label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">smartphone</span>
+<input class="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="+91 90000 00000" type="tel"/>
+</div>
+</div>
+<div>
+<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Admin Email <span class="text-red-500">*</span></label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">alternate_email</span>
+<input class="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="admin@company.com" type="email"/>
+</div>
+</div>
+<div>
+<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
+<input class="w-full px-4 py-2 bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-500 cursor-not-allowed" disabled="" type="text" value="Organisation Admin"/>
+</div>
+<div class="md:col-span-2 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-lg p-4 flex items-start gap-3">
+<span class="material-symbols-outlined text-blue-600 dark:text-blue-400 mt-0.5">info</span>
+<div class="text-sm text-blue-800 dark:text-blue-200">
+<p class="font-semibold mb-1">Primary Admin Role</p>
+<p>The primary admin will have full access to manage this organisation's users, documents, and compliance. They will be the main point of contact for all system notifications.</p>
+</div>
+</div>
+<div class="md:col-span-2 flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-4 mt-2">
+<div>
+<label class="text-sm font-medium text-gray-900 dark:text-white">Send invite / reset access</label>
+<p class="text-xs text-gray-500">Sends an email with login credentials to the admin.</p>
+</div>
+<label class="inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-soft border border-border-light dark:border-border-dark p-6 border-l-4 border-l-primary">
+<h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 border-b border-gray-100 dark:border-gray-700 pb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">security</span>
+                  Platform Governance Controls
+                  <span class="ml-2 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">Super Admin Only</span>
+</h3>
+<div class="space-y-6">
+<div>
+<label class="block text-sm font-medium text-gray-900 dark:text-white mb-3">Organisation Platform Status</label>
+<div class="flex flex-col sm:flex-row gap-4">
+<label class="relative flex items-start p-4 cursor-pointer rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-slate-800 has-[:checked]:border-primary has-[:checked]:bg-blue-50 dark:has-[:checked]:bg-blue-900/20 transition-all flex-1">
+<div class="flex items-center h-5">
+<input checked="" class="w-4 h-4 text-primary border-gray-300 focus:ring-primary dark:focus:ring-offset-gray-800" name="platform-status" type="radio"/>
+</div>
+<div class="ml-3 text-sm">
+<span class="block font-medium text-gray-900 dark:text-white">Active</span>
+<span class="block text-gray-500 dark:text-gray-400 mt-1">Users can log in and create tasks.</span>
+</div>
+</label>
+<label class="relative flex items-start p-4 cursor-pointer rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-slate-800 has-[:checked]:border-red-500 has-[:checked]:bg-red-50 dark:has-[:checked]:bg-red-900/20 transition-all flex-1">
+<div class="flex items-center h-5">
+<input class="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500 dark:focus:ring-offset-gray-800" name="platform-status" type="radio"/>
+</div>
+<div class="ml-3 text-sm">
+<span class="block font-medium text-gray-900 dark:text-white">Suspended</span>
+<span class="block text-gray-500 dark:text-gray-400 mt-1">Login blocked. API access revoked.</span>
+</div>
+</label>
+</div>
+</div>
+<div>
+<label class="block text-sm font-medium text-gray-900 dark:text-white mb-3">Feature Access (Read Only)</label>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+<div class="flex items-center p-3 rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700 opacity-75">
+<span class="material-symbols-outlined text-green-600 mr-2">check_circle</span>
+<span class="text-sm font-medium text-gray-700 dark:text-gray-300">Messaging</span>
+</div>
+<div class="flex items-center p-3 rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700 opacity-75">
+<span class="material-symbols-outlined text-green-600 mr-2">check_circle</span>
+<span class="text-sm font-medium text-gray-700 dark:text-gray-300">Document Management</span>
+</div>
+<div class="flex items-center p-3 rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-gray-700 opacity-75">
+<span class="material-symbols-outlined text-green-600 mr-2">check_circle</span>
+<span class="text-sm font-medium text-gray-700 dark:text-gray-300">Compliance Management</span>
+</div>
+</div>
+</div>
+<div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-lg p-4 flex items-center gap-3">
+<span class="material-symbols-outlined text-blue-600 dark:text-blue-400 flex-shrink-0">domain_verification</span>
+<div class="text-sm text-blue-800 dark:text-blue-200">
+<strong>Inheritance Notice:</strong> By default, this organisation will automatically inherit all global documents and compliance policies published by the Super Admin.
+                  </div>
+</div>
+</div>
+</div>
+<div class="flex flex-col-reverse sm:flex-row items-center justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+<button class="w-full sm:w-auto px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 font-medium transition-colors" type="button">
+                  Cancel
+                </button>
+<button class="w-full sm:w-auto flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-lg shadow-sm transition-all font-medium" type="submit">
+<span class="material-symbols-outlined text-xl">save</span>
+                  Save Organisation
+                </button>
+</div>
+</form>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>

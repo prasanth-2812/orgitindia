@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Create Task</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#a413ec",
+                        "primary-light": "#f3e6fb",
+                        "background-light": "#f7f6f8",
+                        "background-dark": "#1c1022",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar hiding for clean UI */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Toggle Switch Styling */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #a413ec;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #a413ec;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-gray-900 dark:text-gray-100 overflow-hidden">
+<div class="relative flex h-screen w-full flex-col bg-background-light dark:bg-background-dark max-w-md mx-auto shadow-2xl overflow-hidden">
+<!-- Top App Bar -->
+<div class="flex items-center bg-white dark:bg-[#2d1b36] px-4 py-3 justify-between border-b border-gray-100 dark:border-gray-800 z-10 shrink-0">
+<button class="text-gray-500 dark:text-gray-400 text-base font-medium leading-normal shrink-0 hover:text-primary transition-colors">
+                Cancel
+            </button>
+<h2 class="text-gray-900 dark:text-white text-lg font-bold leading-tight flex-1 text-center">Create Task</h2>
+<button class="text-primary text-base font-bold leading-normal shrink-0 hover:opacity-80 transition-opacity">
+                Save
+            </button>
+</div>
+<!-- Main Content (Scrollable) -->
+<main class="flex-1 overflow-y-auto no-scrollbar pb-24">
+<!-- Task Type Segmented Control -->
+<div class="px-4 py-4 sticky top-0 bg-background-light dark:bg-background-dark z-10 backdrop-blur-sm bg-opacity-90">
+<div class="flex h-10 w-full items-center justify-center rounded-lg bg-gray-200 dark:bg-gray-800 p-1">
+<label class="flex cursor-pointer h-full flex-1 items-center justify-center rounded-md px-2 transition-all has-[:checked]:bg-white dark:has-[:checked]:bg-[#3e2c4a] has-[:checked]:shadow-sm has-[:checked]:text-primary">
+<span class="text-sm font-semibold truncate">One-Time Task</span>
+<input checked="" class="hidden" name="taskType" type="radio" value="one-time"/>
+</label>
+<label class="flex cursor-pointer h-full flex-1 items-center justify-center rounded-md px-2 transition-all has-[:checked]:bg-white dark:has-[:checked]:bg-[#3e2c4a] has-[:checked]:shadow-sm has-[:checked]:text-primary text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+<span class="text-sm font-semibold truncate">Recurring Task</span>
+<input class="hidden" name="taskType" type="radio" value="recurring"/>
+</label>
+</div>
+</div>
+<div class="px-4 space-y-6">
+<!-- Basic Info Section -->
+<div class="space-y-4">
+<!-- Title -->
+<div class="flex flex-col gap-1.5">
+<label class="text-gray-900 dark:text-gray-100 text-sm font-semibold">Task Title</label>
+<input class="w-full rounded-xl border-none bg-white dark:bg-[#2d1b36] py-3.5 px-4 text-gray-900 dark:text-white placeholder:text-gray-400 focus:ring-2 focus:ring-primary shadow-sm" placeholder="e.g., Q3 Financial Review" type="text"/>
+</div>
+<!-- Description -->
+<div class="flex flex-col gap-1.5">
+<label class="text-gray-900 dark:text-gray-100 text-sm font-semibold">Description</label>
+<textarea class="w-full rounded-xl border-none bg-white dark:bg-[#2d1b36] py-3 px-4 text-gray-900 dark:text-white placeholder:text-gray-400 focus:ring-2 focus:ring-primary shadow-sm min-h-[120px] resize-none" placeholder="Add detailed instructions, checklist items, or context for this task..."></textarea>
+</div>
+<!-- Assigned To -->
+<div class="flex flex-col gap-1.5">
+<label class="text-gray-900 dark:text-gray-100 text-sm font-semibold">Assigned To</label>
+<div class="relative">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 text-primary">
+<span class="material-symbols-outlined text-[20px]">person_add</span>
+</span>
+<select class="w-full appearance-none rounded-xl border-none bg-white dark:bg-[#2d1b36] py-3.5 pl-11 pr-10 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary shadow-sm">
+<option disabled="" selected="" value="">Select employee or team</option>
+<option value="1">Sarah Jenkins (Compliance)</option>
+<option value="2">Michael Ross (Legal)</option>
+<option value="3">Operations Team</option>
+</select>
+<span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+<span class="material-symbols-outlined text-[20px]">expand_more</span>
+</span>
+</div>
+</div>
+</div>
+<hr class="border-gray-200 dark:border-gray-800"/>
+<!-- Dates Section -->
+<div class="space-y-4">
+<h3 class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider">Schedule</h3>
+<div class="grid grid-cols-2 gap-4">
+<div class="flex flex-col gap-1.5">
+<label class="text-gray-900 dark:text-gray-100 text-sm font-semibold">Start Date</label>
+<div class="relative">
+<input class="w-full rounded-xl border-none bg-white dark:bg-[#2d1b36] py-3 px-4 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary shadow-sm" type="date"/>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-gray-900 dark:text-gray-100 text-sm font-semibold">Target Date</label>
+<div class="relative">
+<input class="w-full rounded-xl border-none bg-white dark:bg-[#2d1b36] py-3 px-4 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary shadow-sm" type="date"/>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-gray-900 dark:text-gray-100 text-sm font-semibold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">event_busy</span>
+                            Due Date
+                        </label>
+<input class="w-full rounded-xl border-none bg-white dark:bg-[#2d1b36] py-3 px-4 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary shadow-sm ring-1 ring-transparent hover:ring-primary/20" type="date"/>
+</div>
+</div>
+<hr class="border-gray-200 dark:border-gray-800"/>
+<!-- Automation Section -->
+<div class="space-y-4 mb-6">
+<h3 class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider">Automation</h3>
+<div class="flex items-center justify-between bg-white dark:bg-[#2d1b36] p-4 rounded-xl shadow-sm">
+<div class="flex flex-col">
+<span class="text-gray-900 dark:text-white text-sm font-semibold">Auto Escalation</span>
+<span class="text-gray-500 dark:text-gray-400 text-xs">Trigger alerts if overdue</span>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 dark:border-gray-600 checked:border-primary" id="escalation-toggle" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 dark:bg-gray-700 cursor-pointer" for="escalation-toggle"></label>
+</div>
+</div>
+<!-- Conditional Field (Visually present to show capability) -->
+<div class="flex flex-col gap-1.5 opacity-50 hover:opacity-100 transition-opacity">
+<label class="text-gray-900 dark:text-gray-100 text-sm font-semibold">Escalation Rule</label>
+<div class="relative">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+<span class="material-symbols-outlined text-[20px]">notifications_active</span>
+</span>
+<select class="w-full appearance-none rounded-xl border-none bg-white dark:bg-[#2d1b36] py-3.5 pl-11 pr-10 text-gray-500 dark:text-gray-400 focus:ring-2 focus:ring-primary shadow-sm cursor-not-allowed" disabled="">
+<option selected="" value="1">Notify Manager after 24h</option>
+<option value="2">Notify Compliance Officer</option>
+<option value="3">Mark as High Priority</option>
+</select>
+<span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+<span class="material-symbols-outlined text-[20px]">expand_more</span>
+</span>
+</div>
+<p class="text-xs text-gray-400 px-1">Enable auto escalation to select a rule.</p>
+</div>
+</div>
+<!-- Floating Action Button Space -->
+<div class="h-6"></div>
+</div>
+</main>
+<!-- Floating Create Button -->
+<div class="absolute bottom-[84px] left-0 right-0 px-4 z-20 pointer-events-none">
+<button class="w-full bg-primary hover:bg-[#8e0ecf] text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 pointer-events-auto transition-transform active:scale-[0.98]">
+<span class="material-symbols-outlined">add_task</span>
+                Create Task
+            </button>
+</div>
+<!-- Bottom Navigation Bar -->
+<div class="bg-white dark:bg-[#2d1b36] border-t border-gray-200 dark:border-gray-800 px-2 py-2 shrink-0 z-30">
+<nav class="flex justify-around items-center">
+<a class="flex flex-col items-center gap-1 p-2 text-gray-400 hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">home</span>
+<span class="text-[10px] font-medium">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 p-2 text-primary group" href="#">
+<span class="material-symbols-outlined fill-current">check_circle</span>
+<span class="text-[10px] font-bold">Tasks</span>
+</a>
+<a class="flex flex-col items-center gap-1 p-2 text-gray-400 hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">description</span>
+<span class="text-[10px] font-medium">Docs</span>
+</a>
+<a class="flex flex-col items-center gap-1 p-2 text-gray-400 hover:text-primary transition-colors group" href="#">
+<div class="relative">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">chat_bubble</span>
+<span class="absolute -top-1 -right-1 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-red-500 ring-2 ring-white dark:ring-[#2d1b36]"></span>
+</div>
+<span class="text-[10px] font-medium">Chat</span>
+</a>
+<a class="flex flex-col items-center gap-1 p-2 text-gray-400 hover:text-primary transition-colors group" href="#">
+<div class="size-6 overflow-hidden rounded-full ring-1 ring-gray-200 group-hover:ring-primary transition-all">
+<img class="h-full w-full object-cover" data-alt="User profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBED9t_cbkrxSxF39V57PltthBzciKPISmwpxfnW78Z-cQ0oX7H2in4zdisgH2IFHsyWYFkvpEbwy6710JVN-nw3USUKc069JPaS0_nsU73V0XOsl2OaTopDvaeuT1mFYOSH1LQNkXW4SOXl3QdTPr65de-795lL5BQVAUp4IMy5Qk41Jab81fXj3feh4zujh5ZCksE828tFcq3CGBkiMjI5LnoJUF3fYxhB6I-leHVhI5hhotrbGiZepu9zl2INONmo1GFaW-QPwq7"/>
+</div>
+<span class="text-[10px] font-medium">Profile</span>
+</a>
+</nav>
+</div>
+</div>
+</body></html>

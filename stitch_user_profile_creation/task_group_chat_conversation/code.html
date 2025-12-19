@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Task Group Chat</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#a413ec",
+                        "primary-dark": "#7c0eb2",
+                        "background-light": "#f7f6f8",
+                        "background-dark": "#1c1022",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#2d1b36",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "md": "0.375rem", 
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for cleaner look */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d1d5db; 
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af; 
+        }
+        
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-[#170d1b] dark:text-[#f5f0f7] font-display antialiased overflow-hidden h-screen flex flex-col">
+<!-- Header Section -->
+<header class="shrink-0 bg-surface-light dark:bg-surface-dark border-b border-gray-200 dark:border-gray-800 z-10">
+<!-- Top Bar -->
+<div class="flex items-center justify-between px-4 py-3">
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-300">
+<span class="material-symbols-outlined text-[24px]">arrow_back</span>
+</button>
+<div class="flex flex-col items-center flex-1 mx-2">
+<h1 class="text-base font-bold leading-tight text-center truncate max-w-[200px] sm:max-w-xs">
+                    Task #402: Q3 Compliance
+                </h1>
+<span class="text-xs text-primary font-medium mt-0.5">Project Alpha Launch</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-300">
+<span class="material-symbols-outlined text-[24px]">search</span>
+</button>
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-300">
+<span class="material-symbols-outlined text-[24px]">info</span>
+</button>
+</div>
+</div>
+<!-- Task Metadata Chips -->
+<div class="flex gap-2 px-4 pb-3 overflow-x-auto no-scrollbar items-center">
+<div class="flex h-7 shrink-0 items-center justify-center gap-x-1.5 rounded-md bg-primary/10 dark:bg-primary/20 px-3 border border-primary/20">
+<div class="size-2 rounded-full bg-primary animate-pulse"></div>
+<p class="text-primary dark:text-primary-light text-xs font-bold leading-normal">In Progress</p>
+</div>
+<div class="flex h-7 shrink-0 items-center justify-center gap-x-1.5 rounded-md bg-orange-100 dark:bg-orange-900/30 px-3 border border-orange-200 dark:border-orange-800">
+<span class="material-symbols-outlined text-orange-600 dark:text-orange-400 text-[16px]">priority_high</span>
+<p class="text-orange-700 dark:text-orange-300 text-xs font-bold leading-normal">High Priority</p>
+</div>
+<div class="flex h-7 shrink-0 items-center justify-center gap-x-1.5 rounded-md bg-gray-100 dark:bg-gray-800 px-3">
+<span class="material-symbols-outlined text-gray-500 text-[16px]">calendar_today</span>
+<p class="text-gray-600 dark:text-gray-300 text-xs font-medium leading-normal">Due Oct 24</p>
+</div>
+</div>
+</header>
+<!-- Chat Area -->
+<main class="flex-1 overflow-y-auto w-full p-4 space-y-6 bg-background-light dark:bg-background-dark">
+<!-- System Message -->
+<div class="flex justify-center w-full">
+<div class="bg-gray-200 dark:bg-gray-800 rounded-full px-4 py-1.5 flex items-center gap-2">
+<span class="material-symbols-outlined text-gray-500 text-[16px]">smart_toy</span>
+<p class="text-gray-600 dark:text-gray-400 text-xs font-medium">Task group auto-created by Admin</p>
+</div>
+</div>
+<!-- Date Separator -->
+<p class="text-gray-400 dark:text-gray-500 text-xs font-medium text-center uppercase tracking-wider my-4">Today, 10:23 AM</p>
+<!-- Incoming Message (Jane) -->
+<div class="flex items-end gap-3 group">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-9 shrink-0 shadow-sm" data-alt="Portrait of Jane Doe looking professional" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDPgWEu67DEen4yJlEIms8-g8VW7J8RjXeNktrjj6JvdF4p_SeQbIOUakJsTfkZ7dZlswJVnChd9PwwjW7i7tzE63nVRP5XtiHyjJ39NPfP3v6GNXCyzvWvvtMdl0z4cI2kYow7J1h3zVJTH3SJl_o_9527ptd1D3HFWbtLUidFMajKwow6rtZkNvoZKS-Mz4wzYflYJUYL6HR9O7wWoUlocRdwWP0Fh5kQ3k_l2_8q22z-jmIF_Tb-3KLfWbgAAHleUBJHfmR9Fck-");'></div>
+<div class="flex flex-col gap-1 items-start max-w-[85%] sm:max-w-[70%]">
+<p class="text-gray-500 dark:text-gray-400 text-[11px] font-medium ml-1">Jane Doe</p>
+<div class="flex flex-col bg-surface-light dark:bg-surface-dark rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-100 dark:border-gray-700">
+<p class="text-sm font-normal text-[#170d1b] dark:text-gray-100 leading-relaxed">
+                        I've uploaded the compliance docs for review. Please take a look when you can.
+                    </p>
+<!-- Attachment -->
+<div class="mt-3 flex items-center gap-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 p-2.5 border border-gray-100 dark:border-gray-700">
+<div class="flex items-center justify-center size-10 rounded bg-red-100 dark:bg-red-900/30 shrink-0">
+<span class="material-symbols-outlined text-red-600 dark:text-red-400">picture_as_pdf</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-[#170d1b] dark:text-white text-sm font-medium truncate">compliance_v1.pdf</p>
+<p class="text-gray-500 text-xs">2.4 MB</p>
+</div>
+<button class="text-gray-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+</div>
+</div>
+<p class="text-gray-400 text-[10px] ml-1 mt-0.5">10:24 AM</p>
+</div>
+</div>
+<!-- Outgoing Message (Me) -->
+<div class="flex flex-col items-end gap-1">
+<div class="flex items-end gap-2 max-w-[85%] sm:max-w-[70%] flex-row-reverse">
+<!-- My Avatar (Optional, often omitted in chat apps for self) -->
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-9 shrink-0 shadow-sm" data-alt="Portrait of the current user" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAYwCUXQeB7xdcPEmKiH2d2GUR1DnjC8NpqPa0-6rNq5NlxJaX16qRuTqERvERrg7kQFKPHqHAi5Y1C9qnbh4qtTtYKWb-6ciR_tJ-VWJA9azLdteWomUdW43Q1hlEacrj2IpdlhIPUB8a4hCSz6SQUPNyOtyAzPPeARja8N551fK-dnUKAbCrML0c6LdOuc7i2j9SogDE9qh2P_BXT3ZfGF0JtqGFmeaKn3sva71gX05peK7lDhAC3XVFdCQktQwxQOpY-KjI8RijV");'></div>
+<div class="flex flex-col items-end">
+<div class="bg-primary text-white rounded-2xl rounded-tr-none px-4 py-3 shadow-md">
+<p class="text-sm font-normal leading-relaxed">
+                            Thanks Jane! I see them. I'll review and get back to you with comments shortly.
+                        </p>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-1 mr-12">
+<p class="text-gray-400 text-[10px]">10:42 AM</p>
+<span class="material-symbols-outlined text-[14px] text-primary">done_all</span>
+</div>
+</div>
+<!-- Incoming Message (Alex) with Reactions -->
+<div class="flex items-end gap-3 group">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-9 shrink-0 shadow-sm" data-alt="Portrait of Alex Smith looking friendly" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAP8-IL2-d-FyWSYEDQOIwinAH9LYef5-R7WFfm93koCXg19pvygWRWuVAVqMSvv-QCzmQ_q9JX9lOryZkvoCSaSv2dYBJHAjWIR67njKWuN5AgOpkjHmdep-6rgUIRkrPj2KViqufWcWEwvXR3eFBz0pYIMHiIHNMSHxMDnE1Fvrr_9GKx9MRa2A4cR7k9KCeEltJ2Lv0xeLHpp8ti-fFi09FYwKvwpETN2OifePyQrzQif15WuaNraGO3rlcg6BKDRjC_AKvKg-Sm");'></div>
+<div class="flex flex-col gap-1 items-start max-w-[85%] sm:max-w-[70%]">
+<p class="text-gray-500 dark:text-gray-400 text-[11px] font-medium ml-1">Alex Smith</p>
+<div class="relative">
+<div class="bg-surface-light dark:bg-surface-dark rounded-2xl rounded-tl-none px-4 py-3 shadow-sm border border-gray-100 dark:border-gray-700">
+<p class="text-sm font-normal text-[#170d1b] dark:text-gray-100 leading-relaxed">
+                            I just updated the task status on the dashboard as well.
+                        </p>
+</div>
+<!-- Reaction Bar attached to message -->
+<div class="absolute -bottom-3 left-2 flex gap-1">
+<div class="flex items-center gap-1 bg-surface-light dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-full px-1.5 py-0.5 shadow-sm">
+<span class="text-xs">👍</span>
+<span class="text-[10px] font-bold text-primary">2</span>
+</div>
+<div class="flex items-center gap-1 bg-surface-light dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-full px-1.5 py-0.5 shadow-sm">
+<span class="text-xs">❤️</span>
+<span class="text-[10px] font-bold text-primary">1</span>
+</div>
+</div>
+</div>
+<p class="text-gray-400 text-[10px] ml-1 mt-4">10:45 AM</p>
+</div>
+</div>
+<!-- Spacer for scrolling -->
+<div class="h-2"></div>
+</main>
+<!-- Input Area -->
+<footer class="shrink-0 bg-surface-light dark:bg-surface-dark border-t border-gray-200 dark:border-gray-800 p-3 pb-8 sm:pb-3">
+<div class="flex items-end gap-2 max-w-4xl mx-auto">
+<!-- Add Media Button -->
+<button class="shrink-0 size-10 flex items-center justify-center rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined text-[24px]">add_circle</span>
+</button>
+<!-- Input Field Container -->
+<div class="flex-1 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center min-h-[44px] px-4 py-2 gap-2 border border-transparent focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50 transition-all">
+<input class="flex-1 bg-transparent border-none outline-none text-sm text-[#170d1b] dark:text-white placeholder-gray-500 dark:placeholder-gray-400 p-0 focus:ring-0" placeholder="Message task group..." type="text"/>
+<button class="shrink-0 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+<span class="material-symbols-outlined text-[20px]">sentiment_satisfied</span>
+</button>
+</div>
+<!-- Send Button -->
+<button class="shrink-0 size-10 flex items-center justify-center rounded-full bg-primary text-white hover:bg-primary-dark transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[20px] ml-0.5">send</span>
+</button>
+</div>
+</footer>
+</body></html>

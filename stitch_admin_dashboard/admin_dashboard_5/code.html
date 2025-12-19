@@ -1,0 +1,398 @@
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Admin Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Noto+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#1e40af', // Blue 800 - Deep Blue
+                            50: '#eff6ff',
+                            100: '#dbeafe', // Secondary light blue
+                            200: '#bfdbfe',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a', // Deepest blue
+                        },
+                        secondary: '#dbeafe',
+                        background: '#f8fafc', // Slate 50
+                        surface: '#ffffff',
+                        border: '#e2e8f0', // Slate 200
+                        text: {
+                            main: '#0f172a', // Slate 900
+                            muted: '#64748b', // Slate 500
+                        }
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"],
+                        "body": ["Noto Sans", "sans-serif"],
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.75rem",
+                        "xl": "1rem", 
+                        "2xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                        'card': '0 0 1px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.08)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        .pulse-dot {
+            box-shadow: 0 0 0 0 rgba(37, 99, 235, 1);
+            transform: scale(1);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(37, 99, 235, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+            }
+        }.metric-card {
+            border-left: 4px solid;
+        }
+        .metric-card-blue { border-left-color: #2563eb; }
+        .metric-card-sky { border-left-color: #38bdf8; }
+        .metric-card-orange { border-left-color: #f97316; }
+        .metric-card-red { border-left-color: #ef4444; }
+    </style>
+</head>
+<body class="bg-background text-text-main font-display overflow-hidden antialiased">
+<div class="flex h-screen w-full overflow-hidden">
+<div class="hidden md:flex w-64 flex-col bg-white border-r border-slate-200 h-full font-body shrink-0">
+<div class="p-6 pb-2">
+<div class="flex items-center gap-3 mb-8">
+<div class="bg-primary p-2 rounded-lg text-white shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-2xl">admin_panel_settings</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-slate-900 text-lg font-extrabold tracking-tight leading-none">ORGIT</h1>
+<span class="text-[10px] text-slate-500 font-medium">Enterprise Admin</span>
+</div>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary text-white shadow-md shadow-primary/20 group" href="#">
+<span class="material-symbols-outlined text-[22px]">grid_view</span>
+<span class="font-medium text-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] text-slate-400 group-hover:text-slate-600 transition-colors">check_circle</span>
+<span class="font-medium text-sm">Tasks</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] text-slate-400 group-hover:text-slate-600 transition-colors">description</span>
+<span class="font-medium text-sm">Documents</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] text-slate-400 group-hover:text-slate-600 transition-colors">verified_user</span>
+<span class="font-medium text-sm">Compliance</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] text-slate-400 group-hover:text-slate-600 transition-colors">group</span>
+<span class="font-medium text-sm">Users</span>
+</a>
+<div class="px-3 pt-6 pb-2">
+<p class="text-xs font-bold text-slate-400 uppercase tracking-wider">System</p>
+</div>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] text-slate-400 group-hover:text-slate-600 transition-colors">settings</span>
+<span class="font-medium text-sm">Configuration</span>
+</a>
+<div class="pl-[11px] space-y-1 pt-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors pl-11" href="#">
+<span class="font-medium text-sm">Notifications</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors pl-11" href="#">
+<span class="font-medium text-sm">Auto Escalation</span>
+</a>
+</div>
+</nav>
+</div>
+<div class="mt-auto p-4 border-t border-slate-100">
+<div class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50/50">
+<div class="size-9 rounded-full bg-cover bg-center border border-slate-200" data-alt="User profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuASOcCNNlFiJDSBt3iGwqNEAfWFM0m51kNrNjkm3pgjpRD6_UeKHde_5zhtMKyl8RcYrGaYgXsqKszvL9Hs_0SBV2MyoYwAd0h5HmQP5tIhYp1I4LuK1PL3vXrsWv-hnIrfQeA4b5vEt-ZnuPRUhjZh43WYyKH7hkaoypZov4FScZA6n1TELwG1lmVsDd1bcXZaeknS9LESKeRQ1tL8ftRMiErEjNdDOQT0Cnk-YpQRF2VcyVjm8VS4c0pYkUacuL2hMO5wrKBA49WW");'></div>
+<div class="min-w-0">
+<p class="text-sm font-bold text-slate-900 truncate">Alex Morgan</p>
+<p class="text-xs text-slate-500 truncate">admin@orgit.com</p>
+</div>
+</div>
+</div>
+</div>
+<div class="flex-1 flex flex-col h-full overflow-hidden relative bg-background">
+<header class="h-16 border-b border-border bg-surface/80 backdrop-blur-md flex items-center justify-between px-8 shrink-0 z-10 sticky top-0">
+<div class="flex items-center gap-4">
+<button class="md:hidden text-text-main">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h2 class="text-lg font-bold text-text-main hidden sm:block">Overview</h2>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[18px]">search</span>
+<input class="bg-slate-100 border border-transparent hover:border-border focus:border-primary-600 rounded-full py-2 pl-10 pr-4 text-sm text-text-main focus:ring-0 focus:outline-none w-64 placeholder:text-text-muted transition-all" placeholder="Search tasks, docs..." type="text"/>
+</div>
+<button class="relative text-text-muted hover:text-primary-700 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0.5 right-0.5 size-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+</button>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto p-6 md:p-8 pb-20 scroll-smooth">
+<div class="max-w-7xl mx-auto space-y-8">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h1 class="text-2xl md:text-3xl font-bold text-text-main tracking-tight mb-1">Welcome back, Admin</h1>
+<p class="text-text-muted text-sm">Here's what's happening with your projects today.</p>
+</div>
+<button class="bg-primary-700 hover:bg-primary-800 text-white font-semibold py-2.5 px-6 rounded-lg flex items-center gap-2 transition-all shadow-lg shadow-primary-700/20 active:scale-95">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span>New Task</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<div class="metric-card metric-card-blue bg-white p-5 rounded-xl shadow-card flex flex-col justify-between h-32 relative overflow-hidden group">
+<div class="flex justify-between items-start z-10">
+<h3 class="text-slate-500 font-semibold text-sm">Self Tasks</h3>
+<span class="material-symbols-outlined text-primary-600">person</span>
+</div>
+<p class="text-4xl font-bold text-slate-800 z-10">12</p>
+<div class="absolute -right-4 -bottom-4 bg-blue-50 w-24 h-24 rounded-full group-hover:scale-110 transition-transform"></div>
+</div>
+<div class="metric-card metric-card-sky bg-white p-5 rounded-xl shadow-card flex flex-col justify-between h-32 relative overflow-hidden group">
+<div class="flex justify-between items-start z-10">
+<h3 class="text-slate-500 font-semibold text-sm">Assigned Tasks</h3>
+<span class="material-symbols-outlined text-sky-500">assignment_ind</span>
+</div>
+<p class="text-4xl font-bold text-slate-800 z-10">24</p>
+<div class="absolute -right-4 -bottom-4 bg-sky-50 w-24 h-24 rounded-full group-hover:scale-110 transition-transform"></div>
+</div>
+<div class="metric-card metric-card-orange bg-white p-5 rounded-xl shadow-card flex flex-col justify-between h-32 relative overflow-hidden group">
+<div class="flex justify-between items-start z-10">
+<h3 class="text-slate-500 font-semibold text-sm">Pending Reviews</h3>
+<span class="material-symbols-outlined text-orange-500">pending_actions</span>
+</div>
+<p class="text-4xl font-bold text-slate-800 z-10">3</p>
+<div class="absolute -right-4 -bottom-4 bg-orange-50 w-24 h-24 rounded-full group-hover:scale-110 transition-transform"></div>
+</div>
+<div class="metric-card metric-card-red bg-white p-5 rounded-xl shadow-card flex flex-col justify-between h-32 relative overflow-hidden group">
+<div class="flex justify-between items-start z-10">
+<h3 class="text-slate-500 font-semibold text-sm">Compliance Alerts</h3>
+<span class="material-symbols-outlined text-red-500">warning</span>
+</div>
+<p class="text-4xl font-bold text-slate-800 z-10">0</p>
+<div class="absolute -right-4 -bottom-4 bg-red-50 w-24 h-24 rounded-full group-hover:scale-110 transition-transform"></div>
+</div>
+</div>
+<div>
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<div class="w-1.5 h-1.5 rounded-full bg-primary-600"></div>
+<h3 class="text-lg font-bold text-text-main">Self Tasks</h3>
+</div>
+<button class="text-sm font-semibold text-primary-700 hover:text-primary-800">View All</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<div class="bg-white p-5 rounded-xl shadow-card border border-slate-100 hover:shadow-md transition-all group">
+<div class="flex justify-between items-start mb-4">
+<span class="bg-red-50 text-red-600 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide">Overdue</span>
+<button class="text-slate-400 hover:text-slate-600">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+</div>
+<h4 class="font-bold text-slate-900 mb-2 group-hover:text-primary-700 transition-colors">Update Security Protocols</h4>
+<p class="text-xs text-slate-500 mb-4 leading-relaxed">Review the latest patch notes and apply security configurations.</p>
+<div class="flex items-center gap-2 text-xs font-medium text-red-500 bg-red-50 px-3 py-1.5 rounded-lg w-max">
+<span class="material-symbols-outlined text-[14px]">calendar_today</span>
+<span>Due: Yesterday</span>
+</div>
+</div>
+<div class="bg-white p-5 rounded-xl shadow-card border border-slate-100 hover:shadow-md transition-all group">
+<div class="flex justify-between items-start mb-4">
+<span class="bg-red-50 text-red-600 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide">Due Soon</span>
+<button class="text-slate-400 hover:text-slate-600">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+</div>
+<h4 class="font-bold text-slate-900 mb-2 group-hover:text-primary-700 transition-colors">Q3 Financial Report</h4>
+<p class="text-xs text-slate-500 mb-4 leading-relaxed">Compile data from sales and marketing for the quarterly review.</p>
+<div class="flex items-center gap-2 text-xs font-medium text-red-500 bg-red-50 px-3 py-1.5 rounded-lg w-max">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+<span>Due: Today, 5:00 PM</span>
+</div>
+</div>
+<div class="bg-white p-5 rounded-xl shadow-card border border-slate-100 hover:shadow-md transition-all group">
+<div class="flex justify-between items-start mb-4">
+<span class="bg-orange-50 text-orange-600 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide">In Progress</span>
+<button class="text-slate-400 hover:text-slate-600">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+</div>
+<h4 class="font-bold text-slate-900 mb-2 group-hover:text-primary-700 transition-colors">Vendor Contract Renewal</h4>
+<p class="text-xs text-slate-500 mb-4 leading-relaxed">Negotiate terms with cloud provider for the upcoming fiscal year.</p>
+<div class="flex items-center gap-2 text-xs font-medium text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg w-max">
+<span class="material-symbols-outlined text-[14px]">calendar_month</span>
+<span>Due: Oct 24, 2023</span>
+</div>
+</div>
+</div>
+</div>
+<div>
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<div class="w-1.5 h-1.5 rounded-full bg-sky-400"></div>
+<h3 class="text-lg font-bold text-text-main">Assigned Tasks</h3>
+</div>
+<button class="text-sm font-semibold text-primary-700 hover:text-primary-800">View All</button>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="bg-white p-5 rounded-xl shadow-card border border-slate-100 flex flex-col md:flex-row items-center gap-4 hover:shadow-md transition-all">
+<div class="size-12 shrink-0 rounded-full bg-cover bg-center border border-slate-200" data-alt="Female team member portrait" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDkwKDrZxU1Za7NUiv9R8YRnyPx1H8pBQ4aZGkDxgeCfzFbPKhziDiu9vsCYtgYCD7g97N1AIJdIhmaDCNVBsSS4DaoBKbLg1CYrjkL07T1202TAdZ0dB-gV9QYKOFhj_bYlisI1WIpozdUQTFzw0LftiReZ_J6ByPCc0RRzNsX5rxDwBwmHH3ECTeQvofRURG1754V79zCZmd8K3VY1TvBiDTUQzzDgodbgljNMDEHQNKzy5hn60L9CuLWNVctJHyHo9vpCULHYvdT");'></div>
+<div class="flex-1 w-full">
+<div class="flex justify-between items-center mb-1">
+<h4 class="font-bold text-slate-900 text-sm md:text-base">Onboard New Hires</h4>
+<span class="text-[10px] font-bold bg-green-50 text-green-600 px-2 py-0.5 rounded uppercase">Completed</span>
+</div>
+<p class="text-xs text-slate-500 mb-3">Sarah Jenkins</p>
+<div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+<div class="bg-green-500 h-full w-full rounded-full"></div>
+</div>
+</div>
+</div>
+<div class="bg-white p-5 rounded-xl shadow-card border border-slate-100 flex flex-col md:flex-row items-center gap-4 hover:shadow-md transition-all">
+<div class="size-12 shrink-0 rounded-full bg-cover bg-center border border-slate-200" data-alt="Male team member portrait" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD3__vSqjv4YNcJCVClLXiZuk8JPCv3ugZT2D6WkmxQTGrr0-IXWyKWWPc5wacoy43OgcchSUumZQraoaZ2Mr1gXitgRlwK9t29VqBgTgCZb8M6Xjdd8Y-R7vSDVy_AoX6Nf3ztXkdYze1DYys1QpjVDd4-_4sQVLi2BKXYQHQgx2nr8LAT2nPLlJgURl9Zb4WkjCjHnobxIzZ-AYBv0-5dEzBZNHwvRLgi-k1-9AkSL_HZoyPOESE707J8CJo8PpLDiAXfNjJthRPZ");'></div>
+<div class="flex-1 w-full">
+<div class="flex justify-between items-center mb-1">
+<h4 class="font-bold text-slate-900 text-sm md:text-base">System Migration</h4>
+<span class="text-[10px] font-bold bg-orange-50 text-orange-600 px-2 py-0.5 rounded uppercase">In Progress</span>
+</div>
+<p class="text-xs text-slate-500 mb-3">Michael Chen</p>
+<div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+<div class="bg-orange-500 h-full w-[65%] rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div>
+<div class="bg-white rounded-xl shadow-card border border-slate-100 overflow-hidden">
+<div class="p-6 border-b border-slate-100 flex justify-between items-start bg-slate-50/50">
+<div class="flex items-start gap-4">
+<div class="bg-blue-100 text-blue-600 p-2 rounded-lg">
+<span class="material-symbols-outlined">folder_open</span>
+</div>
+<div>
+<h3 class="text-lg font-bold text-text-main">Document Management</h3>
+<p class="text-sm text-text-muted">3 documents pending review</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-400">expand_less</span>
+</div>
+<div class="p-2">
+<div class="flex items-center justify-between p-4 hover:bg-slate-50 rounded-lg group transition-colors">
+<div class="flex items-center gap-4">
+<div class="bg-slate-100 p-2 rounded text-slate-500">
+<span class="material-symbols-outlined text-[20px]">description</span>
+</div>
+<span class="text-sm font-semibold text-slate-700 group-hover:text-primary-700 transition-colors">Employee_Handbook_2024_v2.pdf</span>
+</div>
+<button class="text-xs font-bold text-primary-600 hover:text-primary-800 hover:underline px-3 py-1">Review</button>
+</div>
+<div class="flex items-center justify-between p-4 hover:bg-slate-50 rounded-lg group transition-colors">
+<div class="flex items-center gap-4">
+<div class="bg-slate-100 p-2 rounded text-slate-500">
+<span class="material-symbols-outlined text-[20px]">description</span>
+</div>
+<span class="text-sm font-semibold text-slate-700 group-hover:text-primary-700 transition-colors">NDA_Template_Update.docx</span>
+</div>
+<button class="text-xs font-bold text-primary-600 hover:text-primary-800 hover:underline px-3 py-1">Review</button>
+</div>
+<div class="flex items-center justify-between p-4 hover:bg-slate-50 rounded-lg group transition-colors">
+<div class="flex items-center gap-4">
+<div class="bg-slate-100 p-2 rounded text-slate-500">
+<span class="material-symbols-outlined text-[20px]">description</span>
+</div>
+<span class="text-sm font-semibold text-slate-700 group-hover:text-primary-700 transition-colors">Q3_Security_Audit_Preliminary.pdf</span>
+</div>
+<button class="text-xs font-bold text-primary-600 hover:text-primary-800 hover:underline px-3 py-1">Review</button>
+</div>
+</div>
+</div>
+</div>
+<div>
+<details class="group bg-white rounded-xl shadow-card border border-slate-100 overflow-hidden open:shadow-md transition-all">
+<summary class="list-none p-6 border-b border-transparent group-open:border-slate-100 flex justify-between items-start bg-slate-50/50 cursor-pointer hover:bg-slate-100/80 transition-colors">
+<div class="flex items-start gap-4">
+<div class="bg-indigo-100 text-indigo-600 p-2 rounded-lg">
+<span class="material-symbols-outlined">policy</span>
+</div>
+<div>
+<h3 class="text-lg font-bold text-text-main">Compliance Management</h3>
+<p class="text-sm text-green-600 font-medium group-open:hidden">All Systems Go</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-400 group-open:rotate-180 transition-transform">expand_more</span>
+</summary>
+<div class="p-2">
+<div class="flex items-center justify-between p-4 hover:bg-slate-50 rounded-lg group transition-colors border-b border-slate-50 last:border-0">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-green-500">check_circle</span>
+<span class="text-sm font-semibold text-slate-700">GDPR Compliance Check</span>
+</div>
+<span class="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded border border-green-200">Passed</span>
+</div>
+<div class="flex items-center justify-between p-4 hover:bg-slate-50 rounded-lg group transition-colors border-b border-slate-50 last:border-0">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-green-500">check_circle</span>
+<span class="text-sm font-semibold text-slate-700">SOC2 Quarterly Review</span>
+</div>
+<span class="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded border border-green-200">Passed</span>
+</div>
+<div class="flex items-center justify-between p-4 hover:bg-slate-50 rounded-lg group transition-colors">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-orange-500">warning</span>
+<span class="text-sm font-semibold text-slate-700">ISO 27001 Certification Renewal</span>
+</div>
+<span class="text-xs font-bold bg-orange-100 text-orange-700 px-2 py-1 rounded border border-orange-200">Action Required</span>
+</div>
+</div>
+</details>
+</div>
+</div>
+</main>
+</div>
+</div>
+
+</body></html>
