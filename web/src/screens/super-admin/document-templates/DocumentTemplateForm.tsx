@@ -1,193 +1,168 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import { SuperAdminLayout } from '../../../components/super-admin/SuperAdminLayout';
 import { documentTemplateService } from '../../../services/documentTemplateService';
+import { DocumentBuilderContent } from '../../../components/document-builder/DocumentBuilderLayout';
+import { DocumentBuilderProvider, useDocumentBuilder } from '../../../components/document-builder/DocumentBuilderProvider';
+import { serializeDocumentState } from '../../../components/document-builder/serializer';
 
-export const DocumentTemplateForm: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+// Wrapper to bridge the Router/Service with the Builder Context
+const BuilderIntegration: React.FC<{ templateId?: string }> = ({ templateId }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const isEdit = !!id;
+  const { state, dispatch } = useDocumentBuilder();
 
-  const { data: template } = useQuery(
-    ['documentTemplate', id],
-    () => documentTemplateService.getById(id!).then((res) => res.data.data),
-    { enabled: isEdit }
-  );
-
-  const [formData, setFormData] = useState({
-    name: template?.name || '',
-    type: template?.type || 'Tax Invoice',
-    status: template?.status || 'draft',
-    headerTemplate: template?.headerTemplate || '',
-    bodyTemplate: template?.bodyTemplate || '',
-    templateSchema: template?.templateSchema || { editableFields: [] },
-    autoFillFields: template?.autoFillFields || {},
-  });
-
-  const createMutation = useMutation(
-    (data: any) => documentTemplateService.create(data),
+  // Fetch existing data
+  const { data: existingData } = useQuery(
+    ['documentTemplate', templateId],
+    () => documentTemplateService.getById(templateId!).then((res) => res.data.data),
     {
-      onSuccess: () => {
-        queryClient.invalidateQueries('documentTemplates');
-        navigate('/super-admin/document-templates');
-      },
+      enabled: !!templateId,
+      onSuccess: (data) => {
+        let config = data.builderConfig;
+
+        // Robust parsing for builderConfig
+        if (typeof config === 'string') {
+          try {
+            config = JSON.parse(config);
+          } catch (e) {
+            console.error('Failed to parse builderConfig string', e);
+            config = null;
+          }
+        }
+
+        // Fallback to templateSchema._builderConfig if needed
+        if (!config && data.templateSchema) {
+          try {
+            const schema = typeof data.templateSchema === 'string'
+              ? JSON.parse(data.templateSchema)
+              : data.templateSchema;
+            config = schema._builderConfig;
+
+            // Re-parse if it's still a string (nested stringification)
+            if (typeof config === 'string') {
+              config = JSON.parse(config);
+            }
+          } catch (e) {
+            console.error('Failed to parse templateSchema', e);
+          }
+        }
+
+        if (config && typeof config === 'object') {
+          dispatch({ type: 'LOAD_TEMPLATE', payload: config });
+        } else {
+          // Fallback - try to infer from data if possible, or just set meta
+          dispatch({ type: 'SET_META', payload: { name: data.name, type: data.type, status: data.status } });
+        }
+      }
     }
   );
 
-  const updateMutation = useMutation(
-    (data: any) => documentTemplateService.update(id!, data),
+  const mutation = useMutation(
+    (data: any) => templateId
+      ? documentTemplateService.update(templateId, data)
+      : documentTemplateService.create(data),
     {
       onSuccess: () => {
+        console.log('DEBUG: Template saved successfully');
         queryClient.invalidateQueries('documentTemplates');
         navigate('/super-admin/document-templates');
       },
+      onError: (err: any) => {
+        console.error('DEBUG: Failed to save template:', err);
+        alert('Failed to save template: ' + (err.response?.data?.error || err.message));
+      }
     }
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isEdit) {
-      updateMutation.mutate(formData);
-    } else {
-      createMutation.mutate(formData);
+  const deleteMutation = useMutation(
+    (id: string) => documentTemplateService.delete(id),
+    {
+      onSuccess: () => {
+        console.log('DEBUG: Template deleted successfully');
+        queryClient.invalidateQueries('documentTemplates');
+        navigate('/super-admin/document-templates');
+      },
+      onError: (err: any) => {
+        console.error('DEBUG: Failed to delete template:', err);
+        alert('Failed to delete template: ' + (err.response?.data?.error || err.message));
+      }
+    }
+  );
+
+  const handleSave = () => {
+    console.log('DEBUG: handleSave called. Current state:', state);
+    try {
+      const serialized = serializeDocumentState(state);
+      console.log('DEBUG: Serialized state:', serialized);
+
+      const payload = {
+        name: state.meta.name || 'Untitled Template',
+        type: state.meta.type || 'invoice',
+        status: state.meta.status || 'draft',
+        ...serialized
+      };
+
+      console.log('DEBUG: Sending payload to mutation:', payload);
+      mutation.mutate(payload);
+    } catch (e) {
+      console.error('DEBUG: Error in handleSave serialization:', e);
+      alert('Error preparing template data: ' + (e as Error).message);
     }
   };
 
   return (
-    <SuperAdminLayout
-      breadcrumbs={[
-        { label: 'Document Management', path: '/super-admin/document-templates' },
-        { label: isEdit ? 'Edit Template' : 'Create Template' },
-      ]}
-    >
-      <div className="max-w-6xl mx-auto p-8">
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
-          {isEdit ? 'Edit Document Template' : 'Create Document Template'}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-super-admin-surface-light dark:bg-super-admin-surface-dark rounded-xl shadow-soft border border-super-admin-border-light dark:border-super-admin-border-dark p-6">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Template Basic Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Template Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Template Type <span className="text-red-500">*</span>
-                </label>
-                <select
-                  required
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800"
-                  value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                >
-                  <option>Tax Invoice</option>
-                  <option>Quotation</option>
-                  <option>Purchase Order</option>
-                  <option>Receipt</option>
-                </select>
-              </div>
-            </div>
-          </div>
+    <div className="flex flex-col h-full">
+      {/* Action Bar (Top of Builder) */}
+      <div className="bg-white dark:bg-[#1a2632] border-b border-gray-200 dark:border-gray-700 px-6 py-3 flex justify-between items-center">
+        <div className="flex items-center gap-4">
+          <button onClick={() => navigate('/super-admin/document-templates')} className="text-gray-500 hover:text-gray-700">
+            <span className="material-symbols-outlined">arrow_back</span>
+          </button>
+          <h1 className="text-lg font-bold text-gray-900 dark:text-white">
+            {templateId ? 'Edit Template' : 'Create New Template'}
+          </h1>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={handleSave}
+            disabled={mutation.isLoading}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-blue-600 rounded-lg shadow-sm transition-all"
+          >
+            {mutation.isLoading ? 'Saving...' : 'Save Template'}
+          </button>
 
-          <div className="bg-super-admin-surface-light dark:bg-super-admin-surface-dark rounded-xl shadow-soft border border-super-admin-border-light dark:border-super-admin-border-dark p-6">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Header Template (Auto-filled from Entity Master)</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-              Use placeholders like {'{{org.name}}'}, {'{{org.gst}}'}, {'{{org.address}}'}, etc. This section is auto-filled and not editable by users.
-            </p>
-            <textarea
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 font-mono text-sm"
-              rows={10}
-              value={formData.headerTemplate}
-              onChange={(e) => setFormData({ ...formData, headerTemplate: e.target.value })}
-              placeholder="<div><h2>{{org.name}}</h2><p>{{org.address}}</p><p>GST: {{org.gst}}</p></div>"
-            />
-          </div>
-
-          <div className="bg-super-admin-surface-light dark:bg-super-admin-surface-dark rounded-xl shadow-soft border border-super-admin-border-light dark:border-super-admin-border-dark p-6">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Body Template (User Editable)</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-              Use placeholders like {'{{amount}}'}, {'{{date}}'}, {'{{items}}'}, etc. These will be filled by admins/employees.
-            </p>
-            <textarea
-              required
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 font-mono text-sm"
-              rows={15}
-              value={formData.bodyTemplate}
-              onChange={(e) => setFormData({ ...formData, bodyTemplate: e.target.value })}
-              placeholder="Enter template body with variables like {{amount}}, {{date}}, {{customer_name}}, etc."
-            />
-          </div>
-
-          <div className="bg-super-admin-surface-light dark:bg-super-admin-surface-dark rounded-xl shadow-soft border border-super-admin-border-light dark:border-super-admin-border-dark p-6">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Template Schema (Editable Fields)</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-              Define the editable fields that admins/employees can fill. Enter as JSON array.
-            </p>
-            <textarea
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 font-mono text-sm"
-              rows={12}
-              value={JSON.stringify(formData.templateSchema, null, 2)}
-              onChange={(e) => {
-                try {
-                  const parsed = JSON.parse(e.target.value);
-                  setFormData({ ...formData, templateSchema: parsed });
-                } catch (err) {
-                  // Invalid JSON, keep as is
+          {templateId && (
+            <button
+              onClick={() => {
+                if (window.confirm('Are you sure you want to delete this template? This action cannot be undone.')) {
+                  deleteMutation.mutate(templateId);
                 }
               }}
-              placeholder={`{
-  "editableFields": [
-    {
-      "name": "amount",
-      "type": "number",
-      "label": "Amount",
-      "required": true
-    },
-    {
-      "name": "date",
-      "type": "date",
-      "label": "Invoice Date",
-      "required": true
-    }
-  ]
-}`}
-            />
-            <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-              Field types: text, number, date, email, textarea, array
-            </p>
-          </div>
-
-          <div className="flex gap-3 justify-end">
-            <button
-              type="button"
-              onClick={() => navigate('/super-admin/document-templates')}
-              className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-super-admin-surface-dark hover:bg-gray-50 font-medium"
+              disabled={deleteMutation.isLoading}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-transparent rounded-lg transition-all"
             >
-              Cancel
+              {deleteMutation.isLoading ? 'Deleting...' : 'Delete'}
             </button>
-            <button
-              type="submit"
-              className="flex items-center gap-2 bg-super-admin-primary hover:bg-super-admin-primary-hover text-white px-5 py-2.5 rounded-lg shadow-sm transition-all font-medium"
-            >
-              <span className="material-symbols-outlined text-xl">save</span>
-              {isEdit ? 'Update' : 'Create'} Template
-            </button>
-          </div>
-        </form>
+          )}
+        </div>
       </div>
-    </SuperAdminLayout>
+
+      <div className="flex-1 overflow-hidden">
+        <DocumentBuilderContent />
+      </div>
+    </div>
   );
 };
 
+// Refactored Top Level Component
+export const DocumentTemplateForm: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+
+  return (
+    <DocumentBuilderProvider>
+      <BuilderIntegration templateId={id} />
+    </DocumentBuilderProvider>
+  );
+};

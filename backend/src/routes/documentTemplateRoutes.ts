@@ -10,13 +10,13 @@ router.use(authenticate);
 
 // Active templates route (accessible to all authenticated users)
 router.get('/active', documentTemplateController.getActiveTemplates);
+router.get('/:id', documentTemplateController.getDocumentTemplateById);
 
 // Super admin only routes
 router.use(isSuperAdmin);
 
 // Document template CRUD
 router.get('/', documentTemplateController.getAllDocumentTemplates);
-router.get('/:id', documentTemplateController.getDocumentTemplateById);
 router.post('/', documentTemplateController.createDocumentTemplate);
 router.put('/:id', documentTemplateController.updateDocumentTemplate);
 router.delete('/:id', documentTemplateController.deleteDocumentTemplate);

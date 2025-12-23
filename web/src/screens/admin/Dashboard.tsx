@@ -36,7 +36,7 @@ export const AdminDashboard: React.FC = () => {
 
   const stats = statistics?.data || {};
   const tasks = tasksData?.data?.items || [];
-  
+
   // Flatten nested task structures from backend
   const flattenTasks = (taskGroups: any) => {
     if (!taskGroups || typeof taskGroups !== 'object') return [];
@@ -83,7 +83,7 @@ export const AdminDashboard: React.FC = () => {
     today.setHours(0, 0, 0, 0);
     const due = new Date(date);
     due.setHours(0, 0, 0, 0);
-    
+
     if (due < today) {
       return `Due: ${format(date, 'MMM d, yyyy')}`;
     }
@@ -105,7 +105,7 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <AdminLayout>
-      <main className="flex-1 overflow-y-auto p-6 md:p-8 pb-20 scroll-smooth">
+      <main className="flex-1 overflow-y-auto p-6 md:p-8 scroll-smooth">
         <div className="max-w-7xl mx-auto space-y-8">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -208,11 +208,10 @@ export const AdminDashboard: React.FC = () => {
                       {task.description || 'No description'}
                     </p>
                     <div
-                      className={`flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-lg w-max ${
-                        task.status === 'overdue' || task.status === 'duesoon'
+                      className={`flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-lg w-max ${task.status === 'overdue' || task.status === 'duesoon'
                           ? 'text-red-500 bg-red-50'
                           : 'text-slate-500 bg-slate-50'
-                      }`}
+                        }`}
                     >
                       <span className="material-symbols-outlined text-[14px]">
                         {task.status === 'overdue' ? 'calendar_today' : 'schedule'}
@@ -271,13 +270,12 @@ export const AdminDashboard: React.FC = () => {
                       </p>
                       <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full ${
-                            task.status === 'completed'
+                          className={`h-full rounded-full ${task.status === 'completed'
                               ? 'bg-green-500 w-full'
                               : task.status === 'inprogress'
-                              ? 'bg-orange-500 w-2/3'
-                              : 'bg-blue-500 w-1/3'
-                          }`}
+                                ? 'bg-orange-500 w-2/3'
+                                : 'bg-blue-500 w-1/3'
+                            }`}
                         ></div>
                       </div>
                     </div>
@@ -297,31 +295,28 @@ export const AdminDashboard: React.FC = () => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setTaskFilter('all')}
-                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
-                    taskFilter === 'all'
+                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${taskFilter === 'all'
                       ? 'bg-primary text-white shadow-sm'
                       : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-                  }`}
+                    }`}
                 >
                   All Tasks
                 </button>
                 <button
                   onClick={() => setTaskFilter('pending')}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    taskFilter === 'pending'
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${taskFilter === 'pending'
                       ? 'bg-primary text-white shadow-sm'
                       : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-                  }`}
+                    }`}
                 >
                   Pending
                 </button>
                 <button
                   onClick={() => setTaskFilter('completed')}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    taskFilter === 'completed'
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${taskFilter === 'completed'
                       ? 'bg-primary text-white shadow-sm'
                       : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-                  }`}
+                    }`}
                 >
                   Completed
                 </button>

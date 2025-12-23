@@ -72,8 +72,10 @@ export const DocumentLibrary: React.FC = () => {
       a.download = `document-${id}.pdf`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 100);
     } catch (error) {
       alert('Failed to download document');
     }
@@ -182,25 +184,27 @@ export const DocumentLibrary: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {data?.instances.map((instance: any) => (
-                  <tr key={instance.id} className="hover:bg-slate-50">
+                  <tr key={instance.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-slate-900">{instance.title}</div>
+                      <div className="text-sm font-bold text-slate-900">{instance.title}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-slate-600">
-                        {templatesData?.find((t: any) => t.id === instance.templateId)?.name || 'Unknown'}
+                        <span className="bg-slate-100 px-2 py-0.5 rounded text-[10px] font-bold uppercase text-slate-500 mr-2">
+                          {templatesData?.find((t: any) => t.id === instance.templateId)?.type || 'DOC'}
+                        </span>
+                        {templatesData?.find((t: any) => t.id === instance.templateId)?.name || 'Unknown Template'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            instance.status === 'final'
-                              ? 'bg-green-100 text-green-800'
-                              : instance.status === 'draft'
-                              ? 'bg-yellow-100 text-yellow-800'
+                          className={`px-3 py-1 text-[10px] font-bold uppercase rounded-full ${instance.status === 'final'
+                            ? 'bg-green-100 text-green-800'
+                            : instance.status === 'draft'
+                              ? 'bg-amber-100 text-amber-800'
                               : 'bg-slate-100 text-slate-800'
-                          }`}
+                            }`}
                         >
                           {instance.status}
                         </span>
@@ -212,45 +216,49 @@ export const DocumentLibrary: React.FC = () => {
                               }
                             }}
                             disabled={updateStatusMutation.isLoading}
-                            className="text-xs text-green-600 hover:text-green-800 font-medium disabled:opacity-50"
+                            className="text-green-600 hover:text-green-800 hover:bg-green-50 p-1 rounded-full transition-colors disabled:opacity-50"
                             title="Mark as Final"
                           >
-                            <span className="material-symbols-outlined text-sm">check_circle</span>
+                            <span className="material-symbols-outlined text-lg">check_circle</span>
                           </button>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                      {new Date(instance.createdAt).toLocaleDateString()}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-medium">
+                      {new Date(instance.createdAt).toLocaleDateString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric'
+                      })}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => navigate(`/admin/documents/${instance.id}`)}
-                          className="text-primary hover:text-primary/80"
-                          title="View"
+                          className="p-2 text-slate-400 hover:text-primary hover:bg-blue-50 rounded-lg transition-all"
+                          title="View Document"
                         >
                           <span className="material-symbols-outlined">visibility</span>
                         </button>
                         {instance.status === 'draft' && (
                           <button
                             onClick={() => navigate(`/admin/documents/${instance.id}?edit=true`)}
-                            className="text-blue-600 hover:text-blue-800"
-                            title="Edit"
+                            className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
+                            title="Edit Data"
                           >
-                            <span className="material-symbols-outlined">edit</span>
+                            <span className="material-symbols-outlined">edit_square</span>
                           </button>
                         )}
                         <button
                           onClick={() => handleDownload(instance.id)}
-                          className="text-green-600 hover:text-green-800"
-                          title="Download"
+                          className="p-2 text-slate-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                          title="Download PDF"
                         >
                           <span className="material-symbols-outlined">download</span>
                         </button>
                         <button
                           onClick={() => handleDelete(instance.id)}
-                          className="text-red-600 hover:text-red-800"
+                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                           title="Delete"
                         >
                           <span className="material-symbols-outlined">delete</span>

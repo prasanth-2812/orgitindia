@@ -1,6 +1,6 @@
-import axios from 'axios';
+import api from './api';
 
-const API_BASE_URL = '/api/document-instances';
+const API_BASE_URL = '/document-instances';
 
 export interface DocumentInstance {
   id: string;
@@ -16,7 +16,7 @@ export interface DocumentInstance {
 }
 
 export interface DocumentInstanceFilters {
-  status?: 'draft' | 'final' | 'archived';
+  status?: 'draft' | 'final' | 'archived' | '';
   templateId?: string;
   search?: string;
   page?: number;
@@ -51,31 +51,31 @@ export const documentInstanceService = {
     if (filters?.page) params.append('page', filters.page.toString());
     if (filters?.limit) params.append('limit', filters.limit.toString());
 
-    const res = await axios.get(`${API_BASE_URL}?${params.toString()}`);
+    const res = await api.get(`${API_BASE_URL}?${params.toString()}`);
     return res.data.data;
   },
 
   async getById(id: string): Promise<DocumentInstance> {
-    const res = await axios.get(`${API_BASE_URL}/${id}`);
+    const res = await api.get(`${API_BASE_URL}/${id}`);
     return res.data.data;
   },
 
   async create(payload: CreateDocumentInstancePayload): Promise<DocumentInstance> {
-    const res = await axios.post(API_BASE_URL, payload);
+    const res = await api.post(API_BASE_URL, payload);
     return res.data.data;
   },
 
   async update(id: string, payload: UpdateDocumentInstancePayload): Promise<DocumentInstance> {
-    const res = await axios.put(`${API_BASE_URL}/${id}`, payload);
+    const res = await api.put(`${API_BASE_URL}/${id}`, payload);
     return res.data.data;
   },
 
   async delete(id: string): Promise<void> {
-    await axios.delete(`${API_BASE_URL}/${id}`);
+    await api.delete(`${API_BASE_URL}/${id}`);
   },
 
   async download(id: string): Promise<Blob> {
-    const res = await axios.get(`${API_BASE_URL}/${id}/download`, {
+    const res = await api.get(`${API_BASE_URL}/${id}/download`, {
       responseType: 'blob',
     });
     return res.data;
@@ -83,7 +83,7 @@ export const documentInstanceService = {
 
   async share(id: string): Promise<{ shareUrl: string }> {
     // TODO: Implement share functionality if needed
-    const res = await axios.post(`${API_BASE_URL}/${id}/share`);
+    const res = await api.post(`${API_BASE_URL}/${id}/share`);
     return res.data.data;
   },
 };

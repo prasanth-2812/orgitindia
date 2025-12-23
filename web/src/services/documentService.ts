@@ -1,7 +1,7 @@
-import axios from 'axios';
+import api from './api';
 import { Document } from '../../../shared/src/types';
 
-const API_BASE_URL = '/api/documents';
+const API_BASE_URL = '/documents';
 
 export interface UploadDocumentPayload {
   title: string;
@@ -18,12 +18,12 @@ export interface UpdateDocumentPayload {
 
 export const documentService = {
   async list(): Promise<Document[]> {
-    const res = await axios.get(API_BASE_URL);
+    const res = await api.get(API_BASE_URL);
     return res.data.data;
   },
 
   async getById(id: string): Promise<Document> {
-    const res = await axios.get(`${API_BASE_URL}/${id}`);
+    const res = await api.get(`${API_BASE_URL}/${id}`);
     return res.data.data;
   },
 
@@ -34,7 +34,7 @@ export const documentService = {
     if (payload.description) formData.append('description', payload.description);
     formData.append('file', payload.file);
 
-    const res = await axios.post(API_BASE_URL, formData, {
+    const res = await api.post(API_BASE_URL, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -43,17 +43,17 @@ export const documentService = {
   },
 
   async update(id: string, payload: UpdateDocumentPayload): Promise<Document> {
-    const res = await axios.put(`${API_BASE_URL}/${id}`, payload);
+    const res = await api.put(`${API_BASE_URL}/${id}`, payload);
     return res.data.data;
   },
 
   async updateStatus(id: string, status: 'ACTIVE' | 'INACTIVE'): Promise<Document> {
-    const res = await axios.patch(`${API_BASE_URL}/${id}/status`, { status });
+    const res = await api.patch(`${API_BASE_URL}/${id}/status`, { status });
     return res.data.data;
   },
 
   async softDelete(id: string): Promise<void> {
-    await axios.delete(`${API_BASE_URL}/${id}`);
+    await api.delete(`${API_BASE_URL}/${id}`);
   },
 };
 

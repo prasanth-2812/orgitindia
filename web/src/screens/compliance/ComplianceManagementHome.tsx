@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { BottomNav } from '../../components/shared';
 import { complianceService, getScopeBadge } from '../../services/complianceService';
 import { useAuth } from '../../context/AuthContext';
-import { ComplianceMaster } from '../../../shared/src/types';
+import { AdminLayout } from '../../components/admin/AdminLayout';
 
 export const ComplianceManagementHome: React.FC = () => {
   const [filters, setFilters] = useState({ category: '', status: '', scope: '', search: '', page: 1, limit: 20 });
@@ -13,135 +13,140 @@ export const ComplianceManagementHome: React.FC = () => {
 
   const { data, isLoading } = useQuery(
     ['compliance', filters],
-    () => complianceService.getAll(filters).then((res) => res.data.data)
+    () => complianceService.getAll(filters as any).then((res) => res.data.data)
   );
 
-  const items: ComplianceMaster[] = data?.items || [];
+  const items = data?.items || [];
 
-  return (
-    <div className="pb-24 min-h-screen bg-background-light dark:bg-background-dark">
-      <div className="p-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-text-main dark:text-white">Compliance Management</h1>
-            <p className="text-text-muted dark:text-white/60 mt-2">
-              View Global and Organisation compliances
-            </p>
-          </div>
-          {isAdmin && (
-            <Link
-              to="/compliance/create"
-              className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg shadow-sm transition-all font-medium"
-            >
-              <span className="material-symbols-outlined">add</span>
-              Add Compliance
-            </Link>
-          )}
+  const content = (
+    <div className="p-4 md:p-8 space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 leading-tight">Compliance Management</h1>
+          <p className="text-slate-600 mt-1">View Global and Organisation compliances</p>
         </div>
+        {isAdmin && (
+          <Link
+            to="/compliance/create"
+            className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-lg shadow-lg shadow-primary/20 transition-all font-semibold"
+          >
+            <span className="material-symbols-outlined">add</span>
+            Add Compliance
+          </Link>
+        )}
+      </div>
 
-        {/* Info Banner */}
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-          <p className="text-sm text-blue-700 dark:text-blue-300">
-            🌐 Global compliances are visible to all organisations. {isAdmin && 'You can create Organisation-specific compliances.'}
-          </p>
-        </div>
+      {/* Info Banner */}
+      <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-3 text-blue-700">
+        <span className="material-symbols-outlined text-blue-500">info</span>
+        <p className="text-sm">
+          🌐 Global compliances are visible across all organisations. {isAdmin && 'As an Admin, you can create organisation-specific compliance rules.'}
+        </p>
+      </div>
 
-        {/* Filters */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Filters */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="relative">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
             <input
               type="text"
               placeholder="Search compliances..."
-              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-sm"
+              className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary text-sm transition-all"
               value={filters.search}
               onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
             />
-            <select
-              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-sm"
-              value={filters.status}
-              onChange={(e) => setFilters({ ...filters, status: e.target.value, page: 1 })}
-            >
-              <option value="">All Status</option>
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
-            </select>
-            <select
-              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-sm"
-              value={filters.scope}
-              onChange={(e) => setFilters({ ...filters, scope: e.target.value, page: 1 })}
-            >
-              <option value="">All Scopes</option>
-              <option value="GLOBAL">Global</option>
-              <option value="ORG">Organisation</option>
-            </select>
           </div>
+          <select
+            className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm focus:border-primary transition-all"
+            value={filters.status}
+            onChange={(e) => setFilters({ ...filters, status: e.target.value, page: 1 })}
+          >
+            <option value="">All Status</option>
+            <option value="ACTIVE">Active</option>
+            <option value="INACTIVE">Inactive</option>
+          </select>
+          <select
+            className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm focus:border-primary transition-all"
+            value={filters.scope}
+            onChange={(e) => setFilters({ ...filters, scope: e.target.value, page: 1 })}
+          >
+            <option value="">All Scopes</option>
+            <option value="GLOBAL">Global</option>
+            <option value="ORG">Organisation</option>
+          </select>
         </div>
-
-        {/* Compliance List */}
-        {isLoading ? (
-          <div className="text-center py-12 text-text-muted dark:text-white/60">Loading compliances...</div>
-        ) : items.length === 0 ? (
-          <div className="text-center py-12 text-text-muted dark:text-white/60">
-            No compliances found
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {items.map((item) => {
-              const scopeBadge = getScopeBadge(item.scope);
-              const canEditItem = isAdmin && item.scope === 'ORG';
-              return (
-                <div
-                  key={item.id}
-                  className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-bold text-text-main dark:text-white">{item.title}</h3>
-                        <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
-                          item.scope === 'GLOBAL'
-                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-                            : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                        }`}>
-                          {scopeBadge.label}
-                        </span>
-                        {item.scope === 'GLOBAL' && !isAdmin && (
-                          <span className="px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400" title="Read-only">
-                            🔒
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-text-muted dark:text-white/60 mb-2">{item.category}</p>
-                      {item.description && (
-                        <p className="text-sm text-text-muted dark:text-white/60 mb-2">{item.description}</p>
-                      )}
-                      <div className="flex items-center gap-4 text-xs text-text-muted dark:text-white/60">
-                        <span>Type: {item.complianceType}</span>
-                        {item.frequency && <span>Frequency: {item.frequency}</span>}
-                        <span className={`px-2 py-0.5 rounded-full ${
-                          item.status === 'ACTIVE'
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                        }`}>
-                          {item.status}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="ml-4">
-                      <Link
-                        to={`/compliance/${item.id}`}
-                        className="text-primary hover:text-primary-dark font-medium text-sm"
-                      >
-                        View Details
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
       </div>
+
+      {/* Compliance List */}
+      {isLoading ? (
+        <div className="text-center py-12 text-slate-500">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent mx-auto mb-4"></div>
+          Loading compliances...
+        </div>
+      ) : items.length === 0 ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-500">
+          <span className="material-symbols-outlined text-5xl text-slate-200 mb-4">verified_user</span>
+          <p>No compliances found matching your filters</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4">
+          {items.map((item: any) => {
+            const scopeBadge = getScopeBadge(item.scope);
+            return (
+              <div
+                key={item.id}
+                className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:border-primary transition-all group"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
+                      <h3 className="font-bold text-slate-900 group-hover:text-primary transition-colors">{item.title}</h3>
+                      <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md ${item.scope === 'GLOBAL'
+                          ? 'bg-blue-50 text-blue-600 border border-blue-100'
+                          : 'bg-green-50 text-green-600 border border-green-100'
+                        }`}>
+                        {scopeBadge.label}
+                      </span>
+                      <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md ${item.status === 'ACTIVE'
+                          ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                          : 'bg-slate-50 text-slate-500 border border-slate-100'
+                        }`}>
+                        {item.status}
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-500 mb-3">{item.category} • {item.complianceType}</p>
+                    {item.description && (
+                      <p className="text-sm text-slate-600 mb-4 line-clamp-2">{item.description}</p>
+                    )}
+                  </div>
+                  <Link
+                    to={`/compliance/${item.id}`}
+                    className="shrink-0 flex items-center justify-center size-10 rounded-full text-slate-400 hover:bg-slate-50 hover:text-primary transition-all"
+                    title="View Details"
+                  >
+                    <span className="material-symbols-outlined">chevron_right</span>
+                  </Link>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+
+  if (isAdmin) {
+    return (
+      <AdminLayout>
+        {content}
+      </AdminLayout>
+    );
+  }
+
+  return (
+    <div className="pb-24 min-h-screen bg-background-light dark:bg-background-dark">
+      {content}
       <BottomNav />
     </div>
   );

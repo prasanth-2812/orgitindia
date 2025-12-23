@@ -22,6 +22,7 @@ import platformSettingsRoutes from './routes/platformSettingsRoutes';
 import chatUserRoutes from './routes/chatUserRoutes';
 import { setupMessageHandlers } from './socket/messageHandlers';
 import { setupTaskJobs } from './jobs/taskJobs';
+import path from 'path';
 
 dotenv.config();
 
@@ -38,11 +39,32 @@ const io = new Server(httpServer, {
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'", "ws:", "wss:", "http://localhost:3000"],
+      frameSrc: ["'self'", "blob:", "http://localhost:3000"],
+      objectSrc: ["'self'", "blob:", "http://localhost:3000"],
+      frameAncestors: ["'self'", "http://localhost:3001"],
+      upgradeInsecureRequests: null,
+    },
+  },
+  frameguard: false, // Allow iframes for PDF preview
+}));
+
 app.use(cors({
   origin: process.env.SOCKET_CORS_ORIGIN?.split(',') || ['http://localhost:3001', 'http://localhost:19006'],
   credentials: true,
 }));
+
+// Static files for PDF previews
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -96,7 +118,7 @@ app.use((req, res) => {
 httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  
+
   // Setup scheduled jobs
   setupTaskJobs();
 });

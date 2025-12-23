@@ -6,6 +6,8 @@ import { query } from '../config/database';
 import { getOrganizationData, formatOrganizationDataForTemplate } from './entityMasterService';
 import { mergeHeaderAndBody } from './templateService';
 
+import { renderDocumentFromState } from './builderRendererService';
+
 const PDF_OUTPUT_DIR = process.env.PDF_OUTPUT_DIR || './uploads/document-pdfs';
 
 // Ensure PDF output directory exists
@@ -70,54 +72,77 @@ export async function generatePDFFromTemplate(
   filledData: Record<string, any>,
   organizationId: string
 ): Promise<{ pdfBuffer: Buffer; pdfUrl: string }> {
-  // Fetch template
-  const templateResult = await query(
-    `SELECT 
-      header_template,
-      body_template,
-      template_schema,
-      auto_fill_fields
-    FROM document_templates
-    WHERE id = $1 AND status = 'active'`,
-    [templateId]
-  );
+  let completeHTML = '';
 
-  if (templateResult.rows.length === 0) {
-    throw new Error('Template not found or not active');
+  // Case 1: Document Builder State (Modern)
+  // Check if filledData looks like a DocumentBuilder state
+  if (filledData && Array.isArray(filledData.sections)) {
+    console.log('DEBUG: Using Modern Builder Renderer for PDF');
+    // Ensure header details are synchronized if they are missing in the state but present in orgData
+    if (!filledData.header?.orgName) {
+      const orgData = await getOrganizationData(organizationId);
+      filledData.header = {
+        ...filledData.header,
+        orgName: orgData.name,
+        orgAddress: orgData.address || '',
+        orgGstin: orgData.gst || '',
+        orgEmail: orgData.email || '',
+      };
+    }
+    completeHTML = renderDocumentFromState(filledData as any);
+  }
+  // Case 2: Legacy Template (Handlebars)
+  else {
+    console.log('DEBUG: Using Legacy Handlebars Renderer for PDF');
+    // Fetch template
+    const templateResult = await query(
+      `SELECT 
+        header_template,
+        body_template,
+        template_schema,
+        auto_fill_fields
+      FROM document_templates
+      WHERE id = $1 AND status = 'active'`,
+      [templateId]
+    );
+
+    if (templateResult.rows.length === 0) {
+      throw new Error('Template not found or not active');
+    }
+
+    const template = templateResult.rows[0];
+    const headerTemplate = template.header_template || '';
+    const bodyTemplate = template.body_template || '';
+
+    // Fetch organization data for auto-fill
+    const orgData = await getOrganizationData(organizationId);
+    const headerData = formatOrganizationDataForTemplate(orgData);
+
+    // Prepare body data - merge user-filled data with any additional formatting
+    const bodyData = {
+      ...filledData,
+      // Add common formatting helpers
+      formatCurrency: (amount: number) => {
+        return new Intl.NumberFormat('en-IN', {
+          style: 'currency',
+          currency: 'INR',
+        }).format(amount);
+      },
+      formatDate: (date: string) => {
+        return new Date(date).toLocaleDateString('en-IN');
+      },
+    };
+
+    // Merge header and body templates
+    completeHTML = mergeHeaderAndBody(
+      headerTemplate,
+      bodyTemplate,
+      headerData,
+      bodyData
+    );
   }
 
-  const template = templateResult.rows[0];
-  const headerTemplate = template.header_template || '';
-  const bodyTemplate = template.body_template || '';
-
-  // Fetch organization data for auto-fill
-  const orgData = await getOrganizationData(organizationId);
-  const headerData = formatOrganizationDataForTemplate(orgData);
-
-  // Prepare body data - merge user-filled data with any additional formatting
-  const bodyData = {
-    ...filledData,
-    // Add common formatting helpers
-    formatCurrency: (amount: number) => {
-      return new Intl.NumberFormat('en-IN', {
-        style: 'currency',
-        currency: 'INR',
-      }).format(amount);
-    },
-    formatDate: (date: string) => {
-      return new Date(date).toLocaleDateString('en-IN');
-    },
-  };
-
-  // Merge header and body templates
-  const completeHTML = mergeHeaderAndBody(
-    headerTemplate,
-    bodyTemplate,
-    headerData,
-    bodyData
-  );
-
-  // Generate PDF
+  // Generate PDF from the final HTML
   const pdfBuffer = await generatePDFFromHTML(completeHTML);
 
   // Save PDF file
