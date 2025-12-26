@@ -45,7 +45,9 @@ export const requestOTP = async (req: Request, res: Response) => {
  */
 export const verifyOTPAndLogin = async (req: Request, res: Response) => {
   try {
-    const { mobile, otpCode, deviceId, deviceType, password } = req.body;
+    const { mobile, otpCode, deviceId, deviceType, password, name } = req.body;
+
+    console.log(`[verifyOTPAndLogin] Verifying OTP for ${mobile}, name: ${name || 'N/A'}`);
 
     // Validate inputs
     if (!mobile || !/^\+\d{6,20}$/.test(mobile)) {
@@ -64,28 +66,44 @@ export const verifyOTPAndLogin = async (req: Request, res: Response) => {
 
     // Verify OTP
     await verifyOTP(mobile, otpCode);
+    console.log(`[verifyOTPAndLogin] OTP verified for ${mobile}`);
 
     // Check if user exists
     let userResult = await query('SELECT * FROM users WHERE mobile = $1', [mobile]);
 
     let user;
     if (userResult.rows.length === 0) {
+      console.log(`[verifyOTPAndLogin] Creating new user for ${mobile}`);
       // Create new user
       let passwordHash = null;
       if (password) {
         // Hash password if provided during registration
         passwordHash = await hashPassword(password);
       }
-      
+
+      const userName = name || `User ${mobile.slice(-4)}`;
       const newUserResult = await query(
         `INSERT INTO users (id, mobile, name, role, status, password_hash)
          VALUES (gen_random_uuid(), $1, $2, 'employee', 'active', $3)
          RETURNING *`,
-        [mobile, `User ${mobile}`, passwordHash] // Default name, will be updated in profile setup
+        [mobile, userName, passwordHash]
       );
       user = newUserResult.rows[0];
+      console.log(`[verifyOTPAndLogin] New user created: ${user.id} (${user.name})`);
     } else {
       user = userResult.rows[0];
+      console.log(`[verifyOTPAndLogin] User exists: ${user.id} (${user.name})`);
+
+      // Update name if provided and significantly different (or just update always if provided)
+      if (name && name !== user.name) {
+        await query(
+          `UPDATE users SET name = $1, updated_at = NOW() WHERE id = $2`,
+          [name, user.id]
+        );
+        user.name = name;
+        console.log(`[verifyOTPAndLogin] Updated user name to: ${name}`);
+      }
+
       // If user exists and password is provided, update password hash
       if (password && !user.password_hash) {
         const passwordHash = await hashPassword(password);
@@ -94,11 +112,13 @@ export const verifyOTPAndLogin = async (req: Request, res: Response) => {
           [passwordHash, user.id]
         );
         user.password_hash = passwordHash;
+        console.log(`[verifyOTPAndLogin] Updated user password`);
       }
     }
 
     // Check if user is active
     if (user.status !== 'active') {
+      console.warn(`[verifyOTPAndLogin] User ${user.id} is not active: ${user.status}`);
       return res.status(403).json({
         success: false,
         error: 'User account is not active',

@@ -9,9 +9,9 @@ const normalizePhone = (phone: string | null | undefined): string | null => {
   if (!phone) return null;
   // Remove all non-digit characters (spaces, dashes, parentheses, plus signs, etc.)
   let normalized = phone.toString().replace(/\D/g, '');
-  
+
   if (normalized.length === 0) return null;
-  
+
   // Handle different phone number formats
   // If it starts with country code (like 91 for India), remove it
   if (normalized.length >= 12 && normalized.startsWith('91')) {
@@ -25,7 +25,7 @@ const normalizePhone = (phone: string | null | undefined): string | null => {
   if (normalized.length > 10) {
     normalized = normalized.slice(-10);
   }
-  
+
   // Return last 10 digits (allow 10-12 digits for flexibility)
   return normalized.length >= 10 ? normalized.slice(-10) : null;
 };
@@ -51,7 +51,7 @@ export const matchContacts = async (req: AuthRequest, res: Response) => {
     // Extract and normalize phone numbers from device contacts
     // Handle both single phone and allPhones array
     const phoneNumbersSet = new Set<string>();
-    
+
     contacts.forEach((contact: any) => {
       if (contact.phone) {
         const normalized = normalizePhone(contact.phone);
@@ -65,7 +65,7 @@ export const matchContacts = async (req: AuthRequest, res: Response) => {
         });
       }
     });
-    
+
     const phoneNumbers = Array.from(phoneNumbersSet);
 
     console.log('Normalized phone numbers count:', phoneNumbers.length);
@@ -77,15 +77,17 @@ export const matchContacts = async (req: AuthRequest, res: Response) => {
     }
 
     // Get all users first to check their phone formats
-    // Use mobile column (backend schema) with fallback to phone (message-backend schema)
-    // Backend uses 'status' column ('active', 'inactive', 'suspended'), message-backend uses 'is_active'
+    // Updated query to match the actual database schema
     const allUsers = await query(
-      `SELECT id, name, mobile as phone, COALESCE(profile_photo, profile_photo_url) as profile_photo, 
-              (status = 'active' OR COALESCE(is_active, FALSE)) as is_active
-       FROM users
-       WHERE (status = 'active' OR COALESCE(is_active, FALSE) = TRUE) AND id != $1`,
+      `SELECT u.id, u.name, u.mobile as phone, 
+              COALESCE(u.profile_photo_url, pr.profile_photo) as profile_photo, 
+              (u.status = 'active') as is_active
+       FROM users u
+       LEFT JOIN profiles pr ON u.id = pr.user_id
+       WHERE u.status = 'active' AND u.id != $1`,
       [userId]
     );
+
 
     console.log('Total active users in database:', allUsers.rows.length);
     console.log('Sample user phones (raw):', allUsers.rows.slice(0, 5).map((u: any) => u.phone));
@@ -96,13 +98,13 @@ export const matchContacts = async (req: AuthRequest, res: Response) => {
     // Also try matching with different normalization strategies
     const matchedUsers = allUsers.rows.filter((user: any) => {
       if (!user.phone) return false;
-      
+
       // Try multiple normalization strategies
       const normalizedDbPhone = normalizePhone(user.phone);
       if (normalizedDbPhone && phoneNumbers.includes(normalizedDbPhone)) {
         return true;
       }
-      
+
       // Also try matching last 10 digits directly (for numbers with country codes)
       const dbPhoneDigits = user.phone.toString().replace(/\D/g, '');
       if (dbPhoneDigits.length >= 10) {
@@ -111,13 +113,13 @@ export const matchContacts = async (req: AuthRequest, res: Response) => {
           return true;
         }
       }
-      
+
       // Try matching without normalization (exact match after removing non-digits)
       const contactPhoneDigits = phoneNumbers.map(p => p.replace(/\D/g, ''));
       if (contactPhoneDigits.some(cp => dbPhoneDigits.includes(cp) || cp.includes(dbPhoneDigits))) {
         return true;
       }
-      
+
       return false;
     });
 

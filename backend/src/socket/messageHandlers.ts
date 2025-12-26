@@ -84,7 +84,7 @@ export const setupMessageHandlers = (io: Server) => {
         // For each conversation, get unread messages
         for (const row of conversationsResult.rows) {
           const conversationId = row.conversation_id;
-          
+
           // Query unread messages for this conversation
           // SELECT * FROM messages WHERE conversation_id = $1 AND status != 'read'
           // Check message_status table to find messages not yet read by this user
@@ -98,7 +98,6 @@ export const setupMessageHandlers = (io: Server) => {
                AND m.sender_id != $2
                AND (ms.status IS NULL OR ms.status != 'read')
                AND m.is_deleted = false
-               AND m.deleted_at IS NULL
              ORDER BY m.created_at ASC
              LIMIT 50`,
             [conversationId, userId]
@@ -123,9 +122,8 @@ export const setupMessageHandlers = (io: Server) => {
               duration: msg.duration,
               sender_name: msg.sender_name,
               created_at: msg.created_at,
-              status: msg.status || 'sent', // Use status from query (sent/delivered)
-              deleted_at: msg.deleted_at,
-              deleted_for_all: msg.deleted_for_all,
+              status: msg.status || 'sent',
+              deleted_for_all: msg.deleted_for_everyone,
             };
 
             // Emit pending message
@@ -325,18 +323,18 @@ export const setupMessageHandlers = (io: Server) => {
         // Handle direct_<userId> format conversations (they may not exist in conversations table)
         let isGroup = false;
         let otherUserId: string | null = null;
-        
+
         if (conversationId.startsWith('direct_')) {
           // Direct conversation - extract other user ID
           otherUserId = conversationId.replace('direct_', '');
-          
+
           // Verify the other user exists
           const userCheck = await query('SELECT id FROM users WHERE id = $1', [otherUserId]);
           if (userCheck.rows.length === 0) {
             socket.emit('error', { message: 'Other user not found' });
             return;
           }
-          
+
           // For direct conversations, ensure both users are in conversation_members
           // This allows messages to be queried later
           await query(
@@ -351,7 +349,7 @@ export const setupMessageHandlers = (io: Server) => {
              ON CONFLICT (conversation_id, user_id) DO NOTHING`,
             [conversationId, otherUserId]
           );
-          
+
           // Also ensure conversation exists in conversations table (for queries)
           // CRITICAL FIX: Handle conversations table with or without 'type' column
           // Try with type column first (if it exists), then fallback to without
@@ -402,11 +400,11 @@ export const setupMessageHandlers = (io: Server) => {
 
           isGroup = convResult.rows[0].is_group || convResult.rows[0].is_task_group;
         }
-        
+
         // For direct conversations, get the other user's ID
         let receiverId: string | null = null;
         let groupId: string | null = null;
-        
+
         if (!isGroup) {
           // Use otherUserId if we extracted it, otherwise query for it
           if (otherUserId) {
@@ -426,13 +424,13 @@ export const setupMessageHandlers = (io: Server) => {
           groupId = conversationId; // Use conversationId as group reference
         }
 
-        // Get sender info - matching message-backend: use profile_photo
+        // Get sender info - matching message-backend: use profile_photo_url
         const userResult = await query(
-          'SELECT name, profile_photo FROM users WHERE id = $1',
+          'SELECT name, profile_photo_url FROM users WHERE id = $1',
           [userId]
         );
         const senderName = userResult.rows[0]?.name || 'Unknown';
-        const senderPhoto = userResult.rows[0]?.profile_photo || null;
+        const senderPhoto = userResult.rows[0]?.profile_photo_url || null;
 
         // Save message to database - matching EXACT table structure from database
         // Table has: receiver_id, group_id, conversation_id, sender_organization_id, visibility_mode, etc.
@@ -445,7 +443,7 @@ export const setupMessageHandlers = (io: Server) => {
           messageContent: messageContent?.substring(0, 50),
           messageType,
         });
-        
+
         // INSERT matching the exact table structure shown by user
         // Table columns: sender_id, receiver_id, group_id, conversation_id, message_type, content,
         // media_url, file_name, file_size, mime_type, visibility_mode, sender_organization_id,
@@ -458,7 +456,7 @@ export const setupMessageHandlers = (io: Server) => {
             media_url, file_name, file_size, mime_type, visibility_mode, sender_organization_id,
             reply_to_message_id, media_thumbnail, duration, edited_at, deleted_at,
             location_lat, location_lng, location_address, is_live_location, live_location_expires_at,
-            deleted_for_all, status
+            deleted_for_everyone, status
           )
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
            RETURNING *`,
@@ -540,7 +538,7 @@ export const setupMessageHandlers = (io: Server) => {
         // CRITICAL: Emit to both conversation room AND personal rooms
         // 1. Emit to conversation room (users who joined the conversation)
         io.to(conversationId).emit('new_message', messagePayload);
-        
+
         // 2. Emit to each member's personal room (this ensures messages are received even if user hasn't joined conversation room)
         // Matching message-backend: user_${userId} format
         for (const member of conversationMembers.rows) {
@@ -548,7 +546,7 @@ export const setupMessageHandlers = (io: Server) => {
           io.to(personalRoom).emit('new_message', messagePayload);
           console.log(`[send_message] Emitted new_message to personal room: ${personalRoom}`);
         }
-        
+
         console.log(`[send_message] Emitted new_message to conversation room: ${conversationId}, members: ${conversationMembers.rows.length}`);
 
         // Update conversation updated_at (handle both TEXT and UUID formats)
@@ -575,13 +573,13 @@ export const setupMessageHandlers = (io: Server) => {
           const sockets = await io.in(`user_${member.user_id}`).fetchSockets();
           if (sockets.length > 0) {
             onlineUsers.push(member.user_id);
-            
+
             // Update message status to 'delivered' in database
             await query(
               `UPDATE messages SET status = $1 WHERE id = $2`,
               ['delivered', message.id]
             );
-            
+
             console.log(`[send_message] User ${member.user_id} is online, message ${message.id} marked as delivered`);
           }
         }
@@ -589,14 +587,14 @@ export const setupMessageHandlers = (io: Server) => {
         // Emit status update if delivered (matching message-backend logic exactly)
         if (onlineUsers.length > 0) {
           messagePayload.status = 'delivered';
-          
+
           // Emit to conversation room
           io.to(conversationId).emit('message_status_update', {
             messageId: message.id,
             conversationId,
             status: 'delivered',
           });
-          
+
           // Also emit to each member's personal room - matching message-backend: user_${userId}
           // This ensures ConversationsScreen receives status updates
           for (const member of conversationMembers.rows) {
@@ -606,22 +604,22 @@ export const setupMessageHandlers = (io: Server) => {
               status: 'delivered',
             });
           }
-          
+
           console.log(`[send_message] Emitted 'delivered' status update for message ${message.id} to ${onlineUsers.length} online users`);
         }
 
         // Create notifications for offline users
         for (const member of otherMembers.rows) {
           if (!onlineUsers.includes(member.user_id)) {
-            const notificationBody = messageContent 
+            const notificationBody = messageContent
               ? (messageContent.length > 50 ? messageContent.substring(0, 50) + '...' : messageContent)
-              : (messageType === 'image' ? '📷 Photo' 
+              : (messageType === 'image' ? '📷 Photo'
                 : messageType === 'video' ? '🎥 Video'
-                : messageType === 'audio' || messageType === 'voice' ? '🎤 Audio'
-                : messageType === 'document' ? '📄 Document'
-                : messageType === 'location' ? '📍 Location'
-                : `Sent a ${messageType}`);
-            
+                  : messageType === 'audio' || messageType === 'voice' ? '🎤 Audio'
+                    : messageType === 'document' ? '📄 Document'
+                      : messageType === 'location' ? '📍 Location'
+                        : `Sent a ${messageType}`);
+
             await query(
               `INSERT INTO notifications (user_id, type, title, body, conversation_id, message_id, created_at)
                VALUES ($1, 'message', $2, $3, $4, $5, NOW())`,
@@ -642,7 +640,7 @@ export const setupMessageHandlers = (io: Server) => {
         const errorOrganizationId = (typeof organizationId !== 'undefined' ? organizationId : null) || socket.organizationId || 'unknown';
         const errorMessageContent = (typeof messageContent !== 'undefined' ? messageContent : null) || data?.content || data?.text || 'unknown';
         const errorMessageType = (typeof messageType !== 'undefined' ? messageType : null) || data?.messageType || 'unknown';
-        
+
         console.error('[send_message] Error:', error.message);
         console.error('[send_message] Error stack:', error.stack);
         console.error('[send_message] Error details:', {
@@ -652,9 +650,9 @@ export const setupMessageHandlers = (io: Server) => {
           messageContent: typeof errorMessageContent === 'string' ? errorMessageContent.substring(0, 50) : 'unknown',
           messageType: errorMessageType,
         });
-        socket.emit('error', { 
+        socket.emit('error', {
           message: 'Failed to send message',
-          details: error.message 
+          details: error.message
         });
       }
     });
@@ -738,7 +736,7 @@ export const setupMessageHandlers = (io: Server) => {
              WHERE conversation_id::text = $1::text 
              AND sender_id != $2 
              AND status = 'read'
-             AND deleted_at IS NULL`,
+             AND is_deleted = false`,
             [conversationId, userId]
           );
 
@@ -774,13 +772,13 @@ export const setupMessageHandlers = (io: Server) => {
             'SELECT user_id FROM conversation_members WHERE conversation_id::text = $1::text',
             [conversationId]
           );
-          
+
           // Emit a single event for all messages marked as read in this conversation
           io.to(conversationId).emit('conversation_messages_read', {
             conversationId,
             status: 'read',
           });
-          
+
           // Also emit to each member's personal room - matching message-backend: user_${userId}
           for (const member of convMembers.rows) {
             io.to(`user_${member.user_id}`).emit('conversation_messages_read', {
@@ -788,7 +786,7 @@ export const setupMessageHandlers = (io: Server) => {
               status: 'read',
             });
           }
-          
+
           // Also emit individual updates for each message
           for (const msg of unreadMessages.rows) {
             io.to(conversationId).emit('message_status_update', {
@@ -796,7 +794,7 @@ export const setupMessageHandlers = (io: Server) => {
               conversationId,
               status: 'read',
             });
-            
+
             // Also emit to each member's personal room - matching message-backend: user_${userId}
             for (const member of convMembers.rows) {
               io.to(`user_${member.user_id}`).emit('message_status_update', {
@@ -837,7 +835,7 @@ export const setupMessageHandlers = (io: Server) => {
         if (membershipCheck.rows.length > 0) {
           socket.join(conversationId);
           console.log(`User ${userId} joined conversation ${conversationId}`);
-          
+
           // CRITICAL FIX: Also ensure user is in their personal room for status updates
           // Matching message-backend: user_${userId}
           if (!socket.rooms.has(`user_${userId}`)) {
@@ -855,7 +853,7 @@ export const setupMessageHandlers = (io: Server) => {
                LIMIT 1`,
               [userId, receiverId]
             );
-            
+
             if (messageCheck.rows.length > 0) {
               // Create membership if messages exist
               await query(
@@ -888,7 +886,7 @@ export const setupMessageHandlers = (io: Server) => {
     socket.on('typing', async (data: { conversationId: string; isTyping: boolean }) => {
       try {
         const { conversationId, isTyping } = data;
-        
+
         // Check membership
         const membershipCheck = await query(
           `SELECT 1 FROM conversation_members 
@@ -916,11 +914,11 @@ export const setupMessageHandlers = (io: Server) => {
         // Matching message-backend: user_${userId} format
         const sockets = await io.in(`user_${targetUserId}`).fetchSockets();
         const isOnline = sockets.length > 0;
-        
+
         if (callback && typeof callback === 'function') {
           callback(isOnline);
         }
-        
+
         // Also emit the status - matching message-backend
         socket.emit('user_online_status', { userId: targetUserId, isOnline });
       } catch (error: any) {

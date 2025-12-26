@@ -9,6 +9,7 @@ import { COUNTRY_CODES, CountryCode } from '../../constants/countryCodes';
 
 const mobileSchema = z
   .object({
+    name: z.string().min(2, 'Name must be at least 2 characters'),
     countryCode: z.string().nonempty('Country code is required'),
     mobile: z.string().regex(/^\d{6,15}$/, 'Mobile number must be between 6 and 15 digits'),
     password: z
@@ -60,6 +61,7 @@ export const MobileNumberRegistration: React.FC = () => {
             dialCode: selectedCountry.dialCode,
             countryName: selectedCountry.name,
             rawMobile: data.mobile,
+            name: data.name,
             password: data.password || undefined, // Pass password if provided
           },
         });
@@ -103,6 +105,22 @@ export const MobileNumberRegistration: React.FC = () => {
 
         {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 px-6 py-4 w-full">
+          {/* Name Field */}
+          <label className="flex flex-col min-w-40 flex-1">
+            <p className="text-slate-900 dark:text-white text-base font-medium leading-normal pb-2">
+              Full Name
+            </p>
+            <input
+              {...register('name')}
+              className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary h-14 placeholder:text-slate-400 p-[15px] text-lg font-normal leading-normal tracking-wide"
+              placeholder="Enter your full name"
+              type="text"
+            />
+            {errors.name && (
+              <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
+            )}
+          </label>
+
           <label className="flex flex-col min-w-40 flex-1">
             <p className="text-slate-900 dark:text-white text-base font-medium leading-normal pb-2">
               Mobile Number

@@ -11,10 +11,22 @@ const poolConfig: PoolConfig = {
   password: process.env.DB_PASSWORD || 'postgres',
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 10000,
 };
 
+console.log(`[Database] Connecting to ${poolConfig.database} on ${poolConfig.host}:${poolConfig.port} as ${poolConfig.user}`);
+
 const pool = new Pool(poolConfig);
+
+// Test connection and log success
+pool.connect((err, _client, release) => {
+  if (err) {
+    console.error('❌ Error connecting to the database:', err.message);
+  } else {
+    console.log('✅ Database connected successfully');
+    if (release) release();
+  }
+});
 
 pool.on('error', (err) => {
   console.error('Unexpected error on idle client', err);
@@ -38,12 +50,12 @@ export const getClient = async () => {
   const client = await pool.connect();
   const query = client.query.bind(client);
   const release = client.release.bind(client);
-  
+
   // Override client.query to log queries
-  client.query = (...args: any[]) => {
-    return query(...args);
-  };
-  
+  client.query = ((...args: any[]) => {
+    return (query as any)(...args);
+  }) as any;
+
   return client;
 };
 

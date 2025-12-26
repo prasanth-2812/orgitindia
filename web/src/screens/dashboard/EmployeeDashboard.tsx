@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { useQuery } from 'react-query';
 import { useNavigate } from 'react-router-dom';
-import { BottomNav, TaskCard, StatusBadge, Avatar } from '../../components/shared';
+import { BottomNav, TaskCard, Avatar } from '../../components/shared';
 import { dashboardService } from '../../services/dashboardService';
 import { useAuth } from '../../context/AuthContext';
-import { format } from 'date-fns';
 
 type TaskView = 'self' | 'assigned';
 
@@ -39,9 +38,7 @@ export const EmployeeDashboard: React.FC = () => {
   };
 
   const renderTaskSection = (
-    title: string,
-    tasks: any[],
-    category: 'general' | 'documentManagement' | 'complianceManagement' = 'general'
+    tasks: any[]
   ) => {
     if (tasks.length === 0) return null;
 
@@ -50,7 +47,7 @@ export const EmployeeDashboard: React.FC = () => {
         {tasks.map((task) => {
           const status = task.status === 'overdue' ? 'overdue' :
             task.status === 'completed' ? 'completed' :
-            task.daysUntilDue !== null && task.daysUntilDue <= 3 ? 'duesoon' : 'inprogress';
+              task.daysUntilDue !== null && task.daysUntilDue <= 3 ? 'duesoon' : 'inprogress';
 
           return (
             <TaskCard
@@ -78,7 +75,9 @@ export const EmployeeDashboard: React.FC = () => {
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background-light/95 dark:bg-background-dark-subtle/95 backdrop-blur-sm border-b border-gray-100 dark:border-white/10 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Avatar src={user?.profilePhotoUrl} alt={user?.name || 'User'} size="md" online />
+          <div className="relative">
+            <Avatar src={user?.profilePhotoUrl} alt={user?.name || 'User'} size="md" online />
+          </div>
           <div>
             <p className="text-xs text-text-muted dark:text-purple-300 font-medium">
               {getGreeting()},
@@ -189,18 +188,18 @@ export const EmployeeDashboard: React.FC = () => {
             <>
               {/* General Tasks */}
               {currentTasks?.general && (
-                <>
-                  {renderTaskSection('General', [
+                <div className="space-y-4">
+                  {renderTaskSection([
                     ...(currentTasks.general.overdue || []),
                     ...(currentTasks.general.dueSoon || []),
                     ...(currentTasks.general.inProgress || []),
                     ...(currentTasks.general.completed || []),
                   ])}
-                </>
+                </div>
               )}
 
               {/* Document Management Section */}
-              <div>
+              <div className="pt-2">
                 <button
                   onClick={() => setExpandedDM(!expandedDM)}
                   className="w-full flex items-center justify-between p-4 bg-white dark:bg-background-dark-subtle rounded-xl shadow-sm border border-gray-100 dark:border-white/5 group active:scale-[0.99] transition-all"
@@ -212,27 +211,26 @@ export const EmployeeDashboard: React.FC = () => {
                     <span className="font-bold text-text-main dark:text-white">Document Management</span>
                   </div>
                   <span
-                    className={`material-symbols-outlined text-gray-400 group-hover:text-primary transition-all ${
-                      expandedDM ? 'rotate-180' : ''
-                    }`}
+                    className={`material-symbols-outlined text-gray-400 group-hover:text-primary transition-all ${expandedDM ? 'rotate-180' : ''
+                      }`}
                   >
                     expand_more
                   </span>
                 </button>
                 {expandedDM && currentTasks?.documentManagement && (
                   <div className="mt-3 space-y-3">
-                    {renderTaskSection('Document Management', [
+                    {renderTaskSection([
                       ...(currentTasks.documentManagement.overdue || []),
                       ...(currentTasks.documentManagement.dueSoon || []),
                       ...(currentTasks.documentManagement.inProgress || []),
                       ...(currentTasks.documentManagement.completed || []),
-                    ], 'documentManagement')}
+                    ])}
                   </div>
                 )}
               </div>
 
               {/* Compliance Management Section */}
-              <div>
+              <div className="pt-2">
                 <button
                   onClick={() => setExpandedCM(!expandedCM)}
                   className="w-full flex items-center justify-between p-4 bg-white dark:bg-background-dark-subtle rounded-xl shadow-sm border border-gray-100 dark:border-white/5 group active:scale-[0.99] transition-all"
@@ -244,21 +242,20 @@ export const EmployeeDashboard: React.FC = () => {
                     <span className="font-bold text-text-main dark:text-white">Compliance Management</span>
                   </div>
                   <span
-                    className={`material-symbols-outlined text-gray-400 group-hover:text-primary transition-all ${
-                      expandedCM ? 'rotate-180' : ''
-                    }`}
+                    className={`material-symbols-outlined text-gray-400 group-hover:text-primary transition-all ${expandedCM ? 'rotate-180' : ''
+                      }`}
                   >
                     expand_more
                   </span>
                 </button>
                 {expandedCM && currentTasks?.complianceManagement && (
                   <div className="mt-3 space-y-3">
-                    {renderTaskSection('Compliance Management', [
+                    {renderTaskSection([
                       ...(currentTasks.complianceManagement.overdue || []),
                       ...(currentTasks.complianceManagement.dueSoon || []),
                       ...(currentTasks.complianceManagement.inProgress || []),
                       ...(currentTasks.complianceManagement.completed || []),
-                    ], 'complianceManagement')}
+                    ])}
                   </div>
                 )}
               </div>

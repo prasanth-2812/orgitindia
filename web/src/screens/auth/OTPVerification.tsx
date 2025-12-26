@@ -13,6 +13,7 @@ export const OTPVerification: React.FC = () => {
     dialCode?: string;
     countryName?: string;
     rawMobile?: string;
+    name?: string; // Name from registration
     password?: string; // Password from registration
     isLogin?: boolean; // Flag to indicate if this is login (not registration)
   };
@@ -94,6 +95,7 @@ export const OTPVerification: React.FC = () => {
         deviceId,
         deviceType: 'web',
         password: state?.password, // Include password if provided during registration
+        name: state?.name, // Include name if provided during registration
       });
 
       if (response.success && response.data) {
@@ -103,7 +105,7 @@ export const OTPVerification: React.FC = () => {
           response.data.user
         );
         // If login, redirect based on role; if registration, go to profile setup
-        if (isLogin) {
+        if (isLogin || (response.data.user.name && !response.data.user.name.startsWith('User '))) {
           // Redirect based on user role
           if (response.data.user.role === 'admin') {
             navigate('/admin');

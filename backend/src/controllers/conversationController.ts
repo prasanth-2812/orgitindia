@@ -43,7 +43,7 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
                 'id', u.id,
                 'name', u.name,
                 'phone', u.mobile,
-                'profile_photo', COALESCE(u.profile_photo, u.profile_photo_url)
+                'profile_photo', u.profile_photo_url
               )
             )
             FROM conversation_members cm2
@@ -53,14 +53,14 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
           (
             SELECT content
             FROM messages
-            WHERE CAST(conversation_id AS TEXT) = CAST(cm.conversation_id AS TEXT) AND deleted_at IS NULL
+            WHERE CAST(conversation_id AS TEXT) = CAST(cm.conversation_id AS TEXT) AND is_deleted = FALSE
             ORDER BY created_at DESC
             LIMIT 1
           ) as last_message,
           (
             SELECT created_at
             FROM messages
-            WHERE CAST(conversation_id AS TEXT) = CAST(cm.conversation_id AS TEXT) AND deleted_at IS NULL
+            WHERE CAST(conversation_id AS TEXT) = CAST(cm.conversation_id AS TEXT) AND is_deleted = FALSE
             ORDER BY created_at DESC
             LIMIT 1
           ) as last_message_time,
@@ -70,10 +70,10 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
             WHERE CAST(conversation_id AS TEXT) = CAST(cm.conversation_id AS TEXT)
             AND sender_id != $1
             AND (status IS NULL OR status != 'read')
-            AND deleted_at IS NULL
+            AND is_deleted = FALSE
           ), 0) as unread_count,
           COALESCE(
-            (SELECT created_at FROM messages WHERE CAST(conversation_id AS TEXT) = CAST(cm.conversation_id AS TEXT) AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1),
+            (SELECT created_at FROM messages WHERE CAST(conversation_id AS TEXT) = CAST(cm.conversation_id AS TEXT) AND is_deleted = FALSE ORDER BY created_at DESC LIMIT 1),
             c.created_at,
             NOW()
           ) as sort_time
@@ -94,7 +94,7 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
       // Fallback to simplest possible query
       try {
         result = await query(
-        `SELECT 
+          `SELECT 
           CAST(cm.conversation_id AS TEXT) as id,
           c.name,
           COALESCE(c.is_group, FALSE) as is_group,
@@ -123,23 +123,23 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
         result = { rows: [] };
       }
     }
-    
+
     console.log(`[getConversations] Found ${result.rows.length} conversations for user ${userId}`);
-    
+
     // Transform the data to match mobile app expectations
     const transformedConversations = result.rows.map((conv: any) => {
       try {
         // Extract other user info for direct conversations
         const otherMembers = Array.isArray(conv.other_members) ? conv.other_members : [];
         const isGroup = conv.is_group || conv.is_task_group;
-        
+
         // Normalize other_members to include profile_photo_url for UI compatibility
         const normalizedOtherMembers = otherMembers.map((member: any) => ({
           ...member,
           profile_photo_url: member.profile_photo || member.profile_photo_url || null,
           profile_photo: member.profile_photo || member.profile_photo_url || null,
         }));
-        
+
         return {
           ...conv,
           // Add fields expected by mobile app
@@ -179,7 +179,7 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
         };
       }
     });
-    
+
     console.log(`[getConversations] Returning ${transformedConversations.length} transformed conversations`);
     res.json({ conversations: transformedConversations });
   } catch (error: any) {
@@ -234,10 +234,10 @@ export const createConversation = async (req: AuthRequest, res: Response) => {
         [userId]
       );
       const conversationId = convResult.rows[0].id;
-      
+
       // Cast conversation_id to TEXT for consistency
       const conversationIdText = typeof conversationId === 'string' ? conversationId : String(conversationId);
-      
+
       await client.query(
         'INSERT INTO conversation_members (conversation_id, user_id, role) VALUES ($1, $2, $3)',
         [conversationIdText, userId, 'member']
@@ -611,10 +611,10 @@ export const getAllUsers = async (req: AuthRequest, res: Response) => {
     }
 
     const result = await query(
-      `SELECT id, name, mobile as phone, COALESCE(profile_photo, profile_photo_url) as profile_photo,
-              (status = 'active' OR COALESCE(is_active, FALSE)) as is_active
+      `SELECT id, name, mobile as phone, profile_photo_url as profile_photo,
+              (status = 'active') as is_active
        FROM users 
-       WHERE (status = 'active' OR COALESCE(is_active, FALSE) = TRUE) AND id != $1 
+       WHERE (status = 'active') AND id != $1 
        ORDER BY name`,
       [userId]
     );

@@ -10,6 +10,7 @@ export interface VerifyOTPRequest {
   deviceId?: string;
   deviceType?: 'mobile' | 'web';
   password?: string; // Optional password for new user registration
+  name?: string; // Optional name for new user registration
 }
 
 export interface LoginWithPasswordRequest {
@@ -50,7 +51,7 @@ export const authService = {
   loginWithPassword: async (data: LoginWithPasswordRequest) => {
     const deviceId = localStorage.getItem('deviceId') || `web-${Date.now()}`;
     localStorage.setItem('deviceId', deviceId);
-    
+
     const response = await api.post('/auth/login', {
       ...data,
       deviceId,
