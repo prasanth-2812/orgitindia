@@ -1,71 +1,33 @@
 {
   "expo": {
-    "name": "ORGIT",
-    "slug": "orgit-mobile",
+    "name": "Messaging App",
+    "slug": "messaging-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#007AFF",
+      "resizeMode": "contain"
     },
-    "scheme": "orgit",
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.orgit.app"
+      "bundleIdentifier": "com.messagingapp"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#7C3AED"
       },
-      "package": "com.orgit.app",
-      "permissions": [
-        "READ_CONTACTS",
-        "WRITE_CONTACTS",
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
-      ]
+      "package": "com.messagingapp",
+      "softwareKeyboardLayoutMode": "resize",
+      "statusBar": {
+        "backgroundColor": "#7C3AED",
+        "barStyle": "light-content"
+      }
     },
-    "web": {
-      "favicon": "./assets/favicon.png",
-      "bundler": "metro"
-    },
-    "plugins": [
-      [
-        "expo-contacts",
-        {
-          "contactsPermission": "Allow ORGIT to access your contacts to sync and find colleagues."
-        }
-      ],
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Allow ORGIT to access your photos to share images in chats."
-        }
-      ],
-      [
-        "expo-location",
-        {
-          "locationAlwaysAndWhenInUsePermission": "Allow ORGIT to access your location to share your location in chats."
-        }
-      ],
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/icon.png",
-          "color": "#ffffff"
-        }
-      ]
-    ]
+    "web": {}
   }
 }
 

@@ -6,9 +6,11 @@ import {
   setupProfile,
   syncUserContacts,
   getCurrentUser,
+  register,
+  getUserById,
 } from '../controllers/authController';
 import { authenticate } from '../middleware/authMiddleware';
-import { body } from 'express-validator';
+import { body, param } from 'express-validator';
 
 const router = Router();
 
@@ -52,8 +54,34 @@ router.post(
   loginWithPassword
 );
 
+// Register endpoint for mobile app
+router.post(
+  '/register',
+  [
+    body('name')
+      .trim()
+      .isLength({ min: 1 })
+      .withMessage('Name is required'),
+    body('phone')
+      .matches(/^\+\d{6,20}$/)
+      .withMessage('Mobile number must be in international format (e.g., +911234567890)'),
+    body('password')
+      .trim()
+      .isLength({ min: 1 })
+      .withMessage('Password is required'),
+  ],
+  register
+);
+
 // Protected routes
 router.get('/me', authenticate, getCurrentUser);
+
+router.get(
+  '/user/:userId',
+  authenticate,
+  [param('userId').isUUID().withMessage('userId must be a valid UUID')],
+  getUserById
+);
 
 router.put(
   '/profile',

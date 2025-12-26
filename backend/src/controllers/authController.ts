@@ -149,34 +149,36 @@ export const verifyOTPAndLogin = async (req: Request, res: Response) => {
       organizationId,
     });
 
-    // Create or update session
+    // Create or update session (always create session for authentication middleware)
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
 
-    if (deviceId && deviceType) {
-      // Check if session exists
-      const sessionResult = await query(
-        `SELECT id FROM sessions 
-         WHERE user_id = $1 AND device_id = $2 AND is_active = true`,
-        [user.id, deviceId]
-      );
+    // Use provided deviceId/deviceType or generate defaults
+    const finalDeviceId = deviceId || `default-${user.id}`;
+    const finalDeviceType = deviceType || 'mobile';
 
-      if (sessionResult.rows.length > 0) {
-        // Update existing session
-        await query(
-          `UPDATE sessions 
-           SET token = $1, refresh_token = $2, expires_at = $3, last_activity = NOW()
-           WHERE id = $4`,
-          [token, refreshToken, expiresAt, sessionResult.rows[0].id]
-        );
-      } else {
-        // Create new session
-        await query(
-          `INSERT INTO sessions (id, user_id, device_id, device_type, token, refresh_token, expires_at, is_active)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, true)`,
-          [user.id, deviceId, deviceType, token, refreshToken, expiresAt]
-        );
-      }
+    // Check if session exists
+    const sessionResult = await query(
+      `SELECT id FROM sessions 
+       WHERE user_id = $1 AND device_id = $2 AND is_active = true`,
+      [user.id, finalDeviceId]
+    );
+
+    if (sessionResult.rows.length > 0) {
+      // Update existing session
+      await query(
+        `UPDATE sessions 
+         SET token = $1, refresh_token = $2, expires_at = $3, last_activity = NOW()
+         WHERE id = $4`,
+        [token, refreshToken, expiresAt, sessionResult.rows[0].id]
+      );
+    } else {
+      // Create new session
+      await query(
+        `INSERT INTO sessions (id, user_id, device_id, device_type, token, refresh_token, expires_at, is_active)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, true)`,
+        [user.id, finalDeviceId, finalDeviceType, token, refreshToken, expiresAt]
+      );
     }
 
     res.json({
@@ -309,34 +311,36 @@ export const loginWithPassword = async (req: Request, res: Response) => {
       organizationId,
     });
 
-    // Create or update session
+    // Create or update session (always create session for authentication middleware)
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
 
-    if (deviceId && deviceType) {
-      // Check if session exists
-      const sessionResult = await query(
-        `SELECT id FROM sessions 
-         WHERE user_id = $1 AND device_id = $2 AND is_active = true`,
-        [user.id, deviceId]
-      );
+    // Use provided deviceId/deviceType or generate defaults
+    const finalDeviceId = deviceId || `default-${user.id}`;
+    const finalDeviceType = deviceType || 'mobile';
 
-      if (sessionResult.rows.length > 0) {
-        // Update existing session
-        await query(
-          `UPDATE sessions 
-           SET token = $1, refresh_token = $2, expires_at = $3, last_activity = NOW()
-           WHERE id = $4`,
-          [token, refreshToken, expiresAt, sessionResult.rows[0].id]
-        );
-      } else {
-        // Create new session
-        await query(
-          `INSERT INTO sessions (id, user_id, device_id, device_type, token, refresh_token, expires_at, is_active)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, true)`,
-          [user.id, deviceId, deviceType, token, refreshToken, expiresAt]
-        );
-      }
+    // Check if session exists
+    const sessionResult = await query(
+      `SELECT id FROM sessions 
+       WHERE user_id = $1 AND device_id = $2 AND is_active = true`,
+      [user.id, finalDeviceId]
+    );
+
+    if (sessionResult.rows.length > 0) {
+      // Update existing session
+      await query(
+        `UPDATE sessions 
+         SET token = $1, refresh_token = $2, expires_at = $3, last_activity = NOW()
+         WHERE id = $4`,
+        [token, refreshToken, expiresAt, sessionResult.rows[0].id]
+      );
+    } else {
+      // Create new session
+      await query(
+        `INSERT INTO sessions (id, user_id, device_id, device_type, token, refresh_token, expires_at, is_active)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, true)`,
+        [user.id, finalDeviceId, finalDeviceType, token, refreshToken, expiresAt]
+      );
     }
 
     res.json({
@@ -379,7 +383,7 @@ export const setupProfile = async (req: Request, res: Response) => {
       });
     }
 
-    const { name, profilePhotoUrl, bio } = req.body;
+    const { name, profilePhotoUrl, bio, about, contact_number, profile_photo } = req.body;
 
     if (!name || name.trim().length === 0) {
       return res.status(400).json({
@@ -388,12 +392,17 @@ export const setupProfile = async (req: Request, res: Response) => {
       });
     }
 
+    // Use profile_photo if provided, otherwise profilePhotoUrl
+    const photoUrl = profile_photo || profilePhotoUrl || null;
+    // Use about if provided, otherwise bio
+    const userBio = about || bio || null;
+
     const result = await query(
       `UPDATE users 
        SET name = $1, profile_photo_url = $2, bio = $3, updated_at = NOW()
        WHERE id = $4
        RETURNING id, mobile, name, role, status, profile_photo_url, bio, created_at, updated_at`,
-      [name, profilePhotoUrl || null, bio || null, userId]
+      [name, photoUrl, userBio, userId]
     );
 
     if (result.rows.length === 0) {
@@ -403,15 +412,203 @@ export const setupProfile = async (req: Request, res: Response) => {
       });
     }
 
+    const user = result.rows[0];
+
     res.json({
       success: true,
-      data: result.rows[0],
+      data: user,
+      profile: {
+        name: user.name,
+        about: user.bio,
+        contact_number: user.mobile,
+        profile_photo: user.profile_photo_url,
+      },
     });
   } catch (error: any) {
     console.error('Setup profile error:', error);
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to setup profile',
+    });
+  }
+};
+
+/**
+ * Register new user (for mobile app compatibility)
+ */
+export const register = async (req: Request, res: Response) => {
+  try {
+    const { name, phone, password } = req.body;
+
+    if (!name || name.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Name is required',
+      });
+    }
+
+    if (!phone || !/^\+\d{6,20}$/.test(phone)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid mobile number. Must be in international format (e.g., +911234567890)',
+      });
+    }
+
+    if (!password || password.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Password is required',
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await query('SELECT id FROM users WHERE mobile = $1', [phone]);
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'User with this mobile number already exists',
+      });
+    }
+
+    // Hash password
+    const passwordHash = await hashPassword(password);
+
+    // Create user
+    const userResult = await query(
+      `INSERT INTO users (id, mobile, name, role, status, password_hash)
+       VALUES (gen_random_uuid(), $1, $2, 'employee', 'active', $3)
+       RETURNING id, mobile, name, role, status, profile_photo_url, bio, created_at`,
+      [phone, name, passwordHash]
+    );
+
+    const user = userResult.rows[0];
+
+    // Get user's primary organization (or create default)
+    let orgResult = await query(
+      `SELECT uo.organization_id 
+       FROM user_organizations uo 
+       WHERE uo.user_id = $1 
+       LIMIT 1`,
+      [user.id]
+    );
+
+    let organizationId: string | undefined;
+    if (orgResult.rows.length === 0) {
+      // Create default organization for user
+      const defaultOrgResult = await query(
+        `INSERT INTO organizations (id, name) 
+         VALUES (gen_random_uuid(), $1)
+         RETURNING id`,
+        [`Org ${phone}`]
+      );
+      organizationId = defaultOrgResult.rows[0].id;
+
+      await query(
+        `INSERT INTO user_organizations (id, user_id, organization_id)
+         VALUES (gen_random_uuid(), $1, $2)`,
+        [user.id, organizationId]
+      );
+    } else {
+      organizationId = orgResult.rows[0].organization_id;
+    }
+
+    // Generate tokens
+    const token = generateToken({
+      userId: user.id,
+      mobile: user.mobile,
+      role: user.role,
+      organizationId,
+    });
+
+    const refreshToken = generateRefreshToken({
+      userId: user.id,
+      mobile: user.mobile,
+      role: user.role,
+      organizationId,
+    });
+
+    // Create session (required for authentication middleware)
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+    const deviceId = `default-${user.id}`;
+    const deviceType = 'mobile';
+
+    await query(
+      `INSERT INTO sessions (id, user_id, device_id, device_type, token, refresh_token, expires_at, is_active)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, true)`,
+      [user.id, deviceId, deviceType, token, refreshToken, expiresAt]
+    );
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: user.id,
+        mobile: user.mobile,
+        name: user.name,
+        role: user.role,
+        status: user.status,
+        profilePhotoUrl: user.profile_photo_url,
+        bio: user.bio,
+        organizationId: organizationId,
+      },
+    });
+  } catch (error: any) {
+    console.error('Register error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Registration failed',
+    });
+  }
+};
+
+/**
+ * Get user by ID
+ */
+export const getUserById = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId;
+    const { userId: targetUserId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+      });
+    }
+
+    const result = await query(
+      `SELECT id, mobile, name, role, status, profile_photo_url, bio, created_at
+       FROM users WHERE id = $1 AND status = 'active'`,
+      [targetUserId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found',
+      });
+    }
+
+    const user = result.rows[0];
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        mobile: user.mobile,
+        name: user.name,
+        role: user.role,
+        status: user.status,
+        profilePhotoUrl: user.profile_photo_url,
+        bio: user.bio,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get user by ID error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to get user',
     });
   }
 };

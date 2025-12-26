@@ -20,6 +20,8 @@ import superAdminDashboardRoutes from './routes/superAdminDashboardRoutes';
 import userRoutes from './routes/userRoutes';
 import platformSettingsRoutes from './routes/platformSettingsRoutes';
 import chatUserRoutes from './routes/chatUserRoutes';
+import conversationRoutes from './routes/conversationRoutes';
+import contactRoutes from './routes/contactRoutes';
 import { setupMessageHandlers } from './socket/messageHandlers';
 import { setupTaskJobs } from './jobs/taskJobs';
 import path from 'path';
@@ -30,10 +32,42 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.SOCKET_CORS_ORIGIN?.split(',') || ['http://localhost:3001', 'http://localhost:19006'],
-    methods: ['GET', 'POST'],
+    origin: (origin, callback) => {
+      // Allow all origins for development (Expo, localhost, etc.)
+      // In production, you should restrict this
+      const allowedOrigins = process.env.SOCKET_CORS_ORIGIN?.split(',') || [
+        'http://localhost:3001',
+        'http://localhost:19006',
+        'http://localhost:8081',
+        'exp://localhost:8081',
+        /^exp:\/\/.*/,
+        /^http:\/\/.*/,
+        /^https:\/\/.*/,
+      ];
+      
+      // Check if origin matches any allowed pattern
+      if (!origin || allowedOrigins.some(allowed => {
+        if (typeof allowed === 'string') {
+          return origin === allowed || origin.startsWith(allowed);
+        }
+        if (allowed instanceof RegExp) {
+          return allowed.test(origin);
+        }
+        return false;
+      })) {
+        callback(null, true);
+      } else {
+        callback(null, true); // Allow all for now
+      }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'],
   },
+  transports: ['polling', 'websocket'], // Try polling first (more reliable for mobile)
+  allowEIO3: true, // Allow Engine.IO v3 clients
+  pingTimeout: 60000, // Increase ping timeout
+  pingInterval: 25000, // Increase ping interval
 });
 
 const PORT = process.env.PORT || 3000;
@@ -58,8 +92,10 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: process.env.SOCKET_CORS_ORIGIN?.split(',') || ['http://localhost:3001', 'http://localhost:19006'],
+  origin: process.env.SOCKET_CORS_ORIGIN?.split(',') || ['http://localhost:3001', 'http://localhost:19006', 'exp://*', 'http://*'],
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // Static files for PDF previews
@@ -83,6 +119,8 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/document-instances', documentInstanceRoutes);
 app.use('/api/chat/users', chatUserRoutes);
+app.use('/api/conversations', conversationRoutes);
+app.use('/api/contacts', contactRoutes);
 
 // Super Admin Routes
 app.use('/api/super-admin/organizations', organizationRoutes);

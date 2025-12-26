@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
-import { createMessage, getMessages, editMessage, deleteMessage, togglePinMessage, toggleStarMessage, searchMessages, markMessagesAsRead, updateMessageStatus } from '../services/messageService';
+import { createMessage, getMessages, editMessage, deleteMessage, togglePinMessage, starMessage, unstarMessage, getStarredMessages, searchMessages, markMessagesAsRead, updateMessageStatus, forwardMessage } from '../services/messageService';
 import { query } from '../config/database';
+import { imageUpload, videoUpload, audioUpload, documentUpload, voiceNoteUpload, getFileUrl, deleteFile } from '../services/mediaUploadService';
 
 /**
  * Send a message
@@ -161,24 +162,30 @@ export const editMessageHandler = async (req: Request, res: Response) => {
     const { content } = req.body;
 
     if (!content) {
-      return res.status(400).json({
-        success: false,
-        error: 'Content is required',
-      });
+      return res.status(400).json({ error: 'Content required' });
     }
 
-    const message = await editMessage(messageId, userId, content);
+    // Verify message belongs to user
+    const messageCheck = await query(
+      'SELECT id FROM messages WHERE id = $1 AND sender_id = $2 AND deleted_at IS NULL',
+      [messageId, userId]
+    );
 
-    res.json({
-      success: true,
-      data: message,
-    });
+    if (messageCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'Message not found or cannot be edited' });
+    }
+
+    await query(
+      `UPDATE messages
+       SET content = $1, edited_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2`,
+      [content, messageId]
+    );
+
+    res.json({ success: true });
   } catch (error: any) {
     console.error('Edit message error:', error);
-    res.status(400).json({
-      success: false,
-      error: error.message || 'Failed to edit message',
-    });
+    res.status(500).json({ error: 'Failed to edit message' });
   }
 };
 
@@ -189,20 +196,40 @@ export const deleteMessageHandler = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.userId;
     const { messageId } = req.params;
-    const { deleteForEveryone } = req.body;
+    const { deleteForAll } = req.body;
 
-    await deleteMessage(messageId, userId, deleteForEveryone || false);
+    // Verify message belongs to user
+    const messageCheck = await query(
+      'SELECT id, conversation_id FROM messages WHERE id = $1 AND sender_id = $2',
+      [messageId, userId]
+    );
 
-    res.json({
-      success: true,
-      message: 'Message deleted',
-    });
+    if (messageCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'Message not found' });
+    }
+
+    if (deleteForAll === true) {
+      // Delete for everyone
+      await query(
+        `UPDATE messages
+         SET deleted_at = CURRENT_TIMESTAMP, deleted_for_all = TRUE, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $1`,
+        [messageId]
+      );
+    } else {
+      // Delete for self only (soft delete)
+      await query(
+        `UPDATE messages
+         SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $1`,
+        [messageId]
+      );
+    }
+
+    res.json({ success: true });
   } catch (error: any) {
     console.error('Delete message error:', error);
-    res.status(400).json({
-      success: false,
-      error: error.message || 'Failed to delete message',
-    });
+    res.status(500).json({ error: 'Failed to delete message' });
   }
 };
 
@@ -238,26 +265,44 @@ export const togglePin = async (req: Request, res: Response) => {
 };
 
 /**
- * Star/unstar a message
+ * Star a message (using starred_messages table)
  */
-export const toggleStar = async (req: Request, res: Response) => {
+export const starMessageHandler = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.userId;
     const { messageId } = req.params;
-    const { isStarred } = req.body;
 
-    await toggleStarMessage(messageId, userId, isStarred);
+    await query(
+      `INSERT INTO starred_messages (user_id, message_id)
+       VALUES ($1, $2)
+       ON CONFLICT DO NOTHING`,
+      [userId, messageId]
+    );
 
-    res.json({
-      success: true,
-      message: `Message ${isStarred ? 'starred' : 'unstarred'}`,
-    });
+    res.json({ success: true });
   } catch (error: any) {
-    console.error('Toggle star error:', error);
-    res.status(400).json({
-      success: false,
-      error: error.message || 'Failed to toggle star',
-    });
+    console.error('Star message error:', error);
+    res.status(500).json({ error: 'Failed to star message' });
+  }
+};
+
+/**
+ * Unstar a message
+ */
+export const unstarMessageHandler = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId;
+    const { messageId } = req.params;
+
+    await query(
+      'DELETE FROM starred_messages WHERE user_id = $1 AND message_id = $2',
+      [userId, messageId]
+    );
+
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('Unstar message error:', error);
+    res.status(500).json({ error: 'Failed to unstar message' });
   }
 };
 
@@ -294,6 +339,552 @@ export const searchMessagesHandler = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to search messages',
+    });
+  }
+};
+
+/**
+ * Get messages by conversationId (for mobile app compatibility)
+ * Includes reactions and reply info, with membership check
+ */
+export const getMessagesByConversationId = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId;
+    let { conversationId } = req.params;
+    const limit = parseInt(req.query.limit as string) || 50;
+    const offset = parseInt(req.query.offset as string) || 0;
+
+    if (!conversationId) {
+      return res.status(400).json({
+        success: false,
+        error: 'conversationId is required',
+      });
+    }
+
+    // CRITICAL FIX: Handle both UUID and "direct_<userId>" format from mobile app
+    // Messages are stored with conversation_id in "direct_<userId>" format when sent via socket
+    // So we can query directly using the conversationId as-is
+    
+    // For "direct_" format, verify the user has access (they're one of the two users)
+    if (conversationId.startsWith('direct_')) {
+      const otherUserId = conversationId.replace('direct_', '');
+      
+      // Verify this is a conversation between current user and other user
+      if (otherUserId !== userId) {
+        // Check if messages exist between these two users with this conversation_id
+        const messageCheck = await query(
+          `SELECT 1 FROM messages 
+           WHERE conversation_id = $1 
+             AND ((sender_id = $2 AND receiver_id = $3) OR (sender_id = $3 AND receiver_id = $2))
+             AND deleted_at IS NULL
+           LIMIT 1`,
+          [conversationId, userId, otherUserId]
+        );
+        
+        if (messageCheck.rows.length === 0) {
+          // No messages exist - return empty (new conversation)
+          return res.json({ messages: [] });
+        }
+      }
+    } else {
+      // For UUID format, verify user is member
+      const memberCheck = await query(
+        'SELECT * FROM conversation_members WHERE conversation_id = $1 AND user_id = $2',
+        [conversationId, userId]
+      );
+
+      if (memberCheck.rows.length === 0) {
+        // Check if messages exist for this conversation
+        const messageCheck = await query(
+          `SELECT 1 FROM messages WHERE conversation_id = $1 LIMIT 1`,
+          [conversationId]
+        );
+        
+        if (messageCheck.rows.length > 0) {
+          // Messages exist, ensure membership
+          await query(
+            `INSERT INTO conversation_members (conversation_id, user_id)
+             VALUES ($1, $2)
+             ON CONFLICT (conversation_id, user_id) DO NOTHING`,
+            [conversationId, userId]
+          );
+        } else {
+          // New conversation, return empty
+          return res.json({ messages: [] });
+        }
+      }
+    }
+
+    // Get messages with reactions and reply info (matching message-backend structure)
+    // CRITICAL: Use CAST to handle both TEXT and UUID conversation_id formats
+    console.log(`[getMessagesByConversationId] Fetching messages for conversationId: ${conversationId}, userId: ${userId}, limit: ${limit}, offset: ${offset}`);
+    
+    const result = await query(
+      `SELECT 
+        m.id,
+        m.conversation_id,
+        m.sender_id,
+        m.content,
+        m.message_type,
+        m.media_url,
+        m.media_thumbnail,
+        m.file_name,
+        m.file_size,
+        m.mime_type,
+        m.duration,
+        m.reply_to_message_id,
+        m.edited_at,
+        m.deleted_at,
+        m.deleted_for_all,
+        m.location_lat,
+        m.location_lng,
+        m.location_address,
+        m.is_live_location,
+        COALESCE(ms.status, m.status, 'sent') as status,
+        m.created_at,
+        u.name as sender_name,
+        COALESCE(u.profile_photo, u.profile_photo_url) as sender_photo,
+        (
+          SELECT json_agg(
+            json_build_object(
+              'id', mr.id,
+              'user_id', mr.user_id,
+              'reaction', mr.reaction,
+              'user_name', u2.name
+            )
+          )
+          FROM message_reactions mr
+          JOIN users u2 ON mr.user_id = u2.id
+          WHERE mr.message_id = m.id
+        ) as reactions,
+        (
+          SELECT json_build_object(
+            'id', rm.id,
+            'content', rm.content,
+            'sender_name', u3.name,
+            'message_type', rm.message_type
+          )
+          FROM messages rm
+          JOIN users u3 ON rm.sender_id = u3.id
+          WHERE rm.id = m.reply_to_message_id
+        ) as reply_to
+      FROM messages m
+      JOIN users u ON m.sender_id = u.id
+      LEFT JOIN message_status ms ON m.id = ms.message_id AND ms.user_id = $2
+      WHERE CAST(m.conversation_id AS TEXT) = CAST($1 AS TEXT)
+        AND (m.deleted_at IS NULL OR m.deleted_for_all = FALSE OR m.sender_id = $2)
+      ORDER BY m.created_at DESC
+      LIMIT $3 OFFSET $4`,
+      [conversationId, userId, limit, offset]
+    );
+    
+    console.log(`[getMessagesByConversationId] Query for conversationId: ${conversationId}, userId: ${userId}, found ${result.rows.length} messages`);
+
+    // Match message-backend response format: { messages: [...] }
+    // Reverse to show oldest first (chronological order)
+    const messages = result.rows.reverse();
+    console.log(`[getMessagesByConversationId] Returning ${messages.length} messages in chronological order`);
+    res.json({ messages });
+  } catch (error: any) {
+    console.error('[getMessagesByConversationId] Error:', error.message);
+    console.error('[getMessagesByConversationId] Stack:', error.stack);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+};
+
+/**
+ * Mark messages as read by conversationId
+ * CRITICAL FIX: Works with UUID conversation IDs directly (matching message-backend)
+ */
+export const markMessagesAsReadByConversationId = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId;
+    const { conversationId } = req.params;
+
+    if (!conversationId) {
+      return res.status(400).json({
+        success: false,
+        error: 'conversationId is required',
+      });
+    }
+
+    // Verify user is member
+    const memberCheck = await query(
+      'SELECT * FROM conversation_members WHERE conversation_id = $1 AND user_id = $2',
+      [conversationId, userId]
+    );
+
+    if (memberCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'Not a member of this conversation' });
+    }
+
+    // Mark all unread messages as read (matching message-backend implementation)
+    await query(
+      `UPDATE messages 
+       SET status = 'read' 
+       WHERE conversation_id = $1 
+       AND sender_id != $2 
+       AND status != 'read'
+       AND deleted_at IS NULL`,
+      [conversationId, userId]
+    );
+
+    // Match message-backend response format: { success: true }
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('Mark read error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * Add reaction to message
+ */
+export const addReaction = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId;
+    const { messageId } = req.params;
+    const { reaction } = req.body;
+
+    if (!reaction) {
+      return res.status(400).json({ error: 'Reaction required' });
+    }
+
+    await query(
+      `INSERT INTO message_reactions (message_id, user_id, reaction)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (message_id, user_id, reaction) DO NOTHING`,
+      [messageId, userId, reaction]
+    );
+
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('Add reaction error:', error);
+    res.status(500).json({ error: 'Failed to add reaction' });
+  }
+};
+
+/**
+ * Remove reaction from message
+ */
+export const removeReaction = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId;
+    const { messageId, reaction } = req.params;
+
+    await query(
+      'DELETE FROM message_reactions WHERE message_id = $1 AND user_id = $2 AND reaction = $3',
+      [messageId, userId, reaction]
+    );
+
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('Remove reaction error:', error);
+    res.status(500).json({ error: 'Failed to remove reaction' });
+  }
+};
+
+/**
+ * Get all starred messages (using starred_messages table)
+ */
+export const getStarredMessagesHandler = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId;
+    
+    const result = await query(
+      `SELECT m.*, u.name as sender_name, c.name as conversation_name
+       FROM starred_messages sm
+       JOIN messages m ON sm.message_id = m.id
+       JOIN users u ON m.sender_id = u.id
+       JOIN conversations c ON m.conversation_id = c.id
+       WHERE sm.user_id = $1
+         AND (m.deleted_at IS NULL OR m.deleted_for_all = FALSE)
+       ORDER BY sm.created_at DESC`,
+      [userId]
+    );
+
+    res.json({ messages: result.rows });
+  } catch (error: any) {
+    console.error('Get starred messages error:', error);
+    res.status(500).json({ error: 'Failed to get starred messages' });
+  }
+};
+
+/**
+ * Search messages in conversation (using message_search table)
+ */
+export const searchMessagesInConversation = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId;
+    const { conversationId } = req.params; // Optional - can be undefined for global search
+    const { query: searchQuery, limit: limitStr } = req.query; // message-backend uses 'query'
+    const limit = parseInt(limitStr as string) || 50;
+
+    if (!searchQuery) {
+      return res.status(400).json({ error: 'Search query required' });
+    }
+
+    let searchQuerySQL: string;
+    let params: any[];
+
+    if (conversationId) {
+      // Chat-level search
+      // Verify user is member
+      const memberCheck = await query(
+        'SELECT * FROM conversation_members WHERE conversation_id = $1 AND user_id = $2',
+        [conversationId, userId]
+      );
+
+      if (memberCheck.rows.length === 0) {
+        return res.status(403).json({ error: 'Not a member of this conversation' });
+      }
+
+      searchQuerySQL = `
+        SELECT m.*, u.name as sender_name
+        FROM messages m
+        JOIN users u ON m.sender_id = u.id
+        JOIN message_search ms ON m.id = ms.message_id
+        WHERE ms.conversation_id = $1
+          AND ms.content_tsvector @@ plainto_tsquery('english', $2)
+          AND (m.deleted_at IS NULL OR m.deleted_for_all = FALSE OR m.sender_id = $3)
+        ORDER BY m.created_at DESC
+        LIMIT $4
+      `;
+      params = [conversationId, searchQuery, userId, limit];
+    } else {
+      // Global search (across all user's conversations)
+      searchQuerySQL = `
+        SELECT m.*, u.name as sender_name, c.name as conversation_name, c.is_group
+        FROM messages m
+        JOIN users u ON m.sender_id = u.id
+        JOIN conversations c ON m.conversation_id = c.id
+        JOIN conversation_members cm ON c.id = cm.conversation_id
+        JOIN message_search ms ON m.id = ms.message_id
+        WHERE cm.user_id = $1
+          AND ms.content_tsvector @@ plainto_tsquery('english', $2)
+          AND (m.deleted_at IS NULL OR m.deleted_for_all = FALSE OR m.sender_id = $1)
+        ORDER BY m.created_at DESC
+        LIMIT $3
+      `;
+      params = [userId, searchQuery, limit];
+    }
+
+    const result = await query(searchQuerySQL, params);
+    res.json({ messages: result.rows });
+  } catch (error: any) {
+    console.error('Search messages error:', error);
+    res.status(500).json({ error: 'Search failed' });
+  }
+};
+
+/**
+ * Forward a message to another conversation
+ */
+export const forwardMessageHandler = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId;
+    const organizationId = (req as any).user?.organizationId;
+    const { messageId } = req.params;
+    const { receiverId, groupId } = req.body;
+
+    if (!userId || !organizationId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+      });
+    }
+
+    if (!receiverId && !groupId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Either receiverId or groupId must be provided',
+      });
+    }
+
+    const message = await forwardMessage(
+      messageId,
+      userId,
+      receiverId || null,
+      groupId || null,
+      organizationId
+    );
+
+    res.json({
+      success: true,
+      data: message,
+    });
+  } catch (error: any) {
+    console.error('Forward message error:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message || 'Failed to forward message',
+    });
+  }
+};
+
+/**
+ * Upload image for message
+ */
+export const uploadImage = async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No file uploaded',
+      });
+    }
+
+    const fileUrl = getFileUrl(req.file.filename);
+
+    res.json({
+      success: true,
+      data: {
+        url: fileUrl,
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        size: req.file.size,
+        mimeType: req.file.mimetype,
+      },
+    });
+  } catch (error: any) {
+    console.error('Upload image error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to upload image',
+    });
+  }
+};
+
+/**
+ * Upload video for message
+ */
+export const uploadVideo = async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No file uploaded',
+      });
+    }
+
+    const fileUrl = getFileUrl(req.file.filename);
+
+    res.json({
+      success: true,
+      data: {
+        url: fileUrl,
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        size: req.file.size,
+        mimeType: req.file.mimetype,
+      },
+    });
+  } catch (error: any) {
+    console.error('Upload video error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to upload video',
+    });
+  }
+};
+
+/**
+ * Upload audio file for message
+ */
+export const uploadAudio = async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No file uploaded',
+      });
+    }
+
+    const fileUrl = getFileUrl(req.file.filename);
+
+    res.json({
+      success: true,
+      data: {
+        url: fileUrl,
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        size: req.file.size,
+        mimeType: req.file.mimetype,
+      },
+    });
+  } catch (error: any) {
+    console.error('Upload audio error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to upload audio',
+    });
+  }
+};
+
+/**
+ * Upload document for message
+ */
+export const uploadDocument = async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No file uploaded',
+      });
+    }
+
+    const fileUrl = getFileUrl(req.file.filename);
+
+    res.json({
+      success: true,
+      data: {
+        url: fileUrl,
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        size: req.file.size,
+        mimeType: req.file.mimetype,
+      },
+    });
+  } catch (error: any) {
+    console.error('Upload document error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to upload document',
+    });
+  }
+};
+
+/**
+ * Upload voice note for message
+ */
+export const uploadVoiceNote = async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No file uploaded',
+      });
+    }
+
+    const fileUrl = getFileUrl(req.file.filename);
+    const duration = req.body.duration ? parseInt(req.body.duration) : null;
+
+    res.json({
+      success: true,
+      data: {
+        url: fileUrl,
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        size: req.file.size,
+        mimeType: req.file.mimetype,
+        duration,
+      },
+    });
+  } catch (error: any) {
+    console.error('Upload voice note error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to upload voice note',
     });
   }
 };

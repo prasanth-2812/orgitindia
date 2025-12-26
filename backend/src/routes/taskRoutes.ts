@@ -1,13 +1,12 @@
 import { Router } from 'express';
 import {
-  createTaskHandler,
-  getTaskHandler,
-  getUserTasksHandler,
-  acceptTaskHandler,
-  rejectTaskHandler,
-  completeTaskHandler,
-  getTaskAssignmentsHandler,
-  updateTaskHandler,
+  getTasks,
+  getTask,
+  createTask,
+  acceptTask,
+  rejectTask,
+  updateTaskStatus,
+  updateTask,
 } from '../controllers/taskController';
 import { getMentionableTasksHandler } from '../controllers/taskMentionController';
 import {
@@ -23,51 +22,54 @@ const router = Router();
 // All routes require authentication
 router.use(authenticate);
 
-router.post(
-  '/',
-  [
-    body('title').trim().isLength({ min: 1, max: 255 }),
-    body('taskType').isIn(['one_time', 'recurring']),
-    body('assignedUserIds').isArray().notEmpty(),
-    body('category').optional().isIn(['general', 'document_management', 'compliance_management']),
-  ],
-  createTaskHandler
-);
-
+// Get all tasks - matching message-backend
 router.get(
   '/',
   [
-    queryValidator('status').optional().isIn(['pending', 'in_progress', 'completed', 'rejected', 'overdue']),
-    queryValidator('category').optional().isIn(['general', 'document_management', 'compliance_management']),
-    queryValidator('taskType').optional().isIn(['one_time', 'recurring']),
-    queryValidator('isSelfTask').optional().isBoolean(),
+    queryValidator('type').optional().isIn(['one_time', 'recurring']),
+    queryValidator('status').optional().isIn(['pending', 'in_progress', 'completed', 'rejected']),
+    queryValidator('priority').optional().isIn(['high', 'medium', 'low']),
   ],
-  getUserTasksHandler
+  getTasks
 );
 
-router.get('/:taskId', getTaskHandler);
+// Get a single task by ID - matching message-backend
+router.get('/:id', getTask);
 
-router.get('/:taskId/assignments', getTaskAssignmentsHandler);
-
-router.post('/:taskId/accept', acceptTaskHandler);
-
+// Create a new task - matching message-backend
 router.post(
-  '/:taskId/reject',
-  [body('rejectionReason').trim().isLength({ min: 1 })],
-  rejectTaskHandler
-);
-
-router.post('/:taskId/complete', completeTaskHandler);
-
-router.put(
-  '/:taskId',
+  '/',
   [
-    body('title').optional().trim().isLength({ min: 1, max: 255 }),
+    body('title').trim().isLength({ min: 1 }),
+    body('due_date').notEmpty(),
+    body('task_type').optional().isIn(['one_time', 'recurring']),
+    body('priority').optional().isIn(['high', 'medium', 'low']),
+    body('assignee_ids').optional().isArray(),
   ],
-  updateTaskHandler
+  createTask
 );
 
-router.get('/mentionable', getMentionableTasksHandler);
+// Accept a task - matching message-backend
+router.post('/:id/accept', acceptTask);
+
+// Reject a task - matching message-backend
+router.post(
+  '/:id/reject',
+  [body('reason').trim().isLength({ min: 1 })],
+  rejectTask
+);
+
+// Update task status - matching message-backend
+router.patch(
+  '/:id/status',
+  [
+    body('status').isIn(['pending', 'in_progress', 'completed', 'rejected']),
+  ],
+  updateTaskStatus
+);
+
+// Update task - matching message-backend
+router.patch('/:id', updateTask);
 
 // Compliance linking routes
 router.post('/:taskId/compliance', linkComplianceToTask);

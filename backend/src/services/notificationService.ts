@@ -1,64 +1,116 @@
 import { query } from '../config/database';
-import { Notification, NotificationType } from '../../../shared/src/types';
+
+export interface NotificationData {
+  userId: string;
+  type: 'message' | 'task_assigned' | 'task_accepted' | 'task_rejected' | 'task_updated' | 'task_overdue' | 'task_escalated' | 'group_member_added' | 'document_shared';
+  title: string;
+  body?: string;
+  conversationId?: string;
+  messageId?: string;
+  relatedEntityType?: string;
+  relatedEntityId?: string;
+}
 
 /**
- * Create a notification
+ * Create a notification for a user
  */
-export const createNotification = async (
-  userId: string,
-  title: string,
-  description: string | null,
-  type: NotificationType,
-  relatedEntityType: string | null = null,
-  relatedEntityId: string | null = null
-): Promise<Notification> => {
-  const result = await query(
+export const createNotification = async (data: NotificationData): Promise<void> => {
+  await query(
     `INSERT INTO notifications (
-      id, user_id, title, description, type, related_entity_type, related_entity_id
+      id, user_id, type, title, body, conversation_id, message_id,
+      related_entity_type, related_entity_id, is_read, created_at
     )
-    VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6)
-    RETURNING *`,
-    [userId, title, description, type, relatedEntityType, relatedEntityId]
+    VALUES (
+      gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, false, NOW()
+    )`,
+    [
+      data.userId,
+      data.type,
+      data.title,
+      data.body || null,
+      data.conversationId || null,
+      data.messageId || null,
+      data.relatedEntityType || null,
+      data.relatedEntityId || null,
+    ]
   );
-
-  return result.rows[0] as Notification;
 };
 
 /**
- * Get user notifications
+ * Create message notification for offline users
  */
-export const getUserNotifications = async (
+export const createMessageNotification = async (
   userId: string,
-  limit: number = 50,
-  unreadOnly: boolean = false
-): Promise<Notification[]> => {
-  let queryText = `
-    SELECT * FROM notifications
-    WHERE user_id = $1
-  `;
-
-  const params: any[] = [userId];
-
-  if (unreadOnly) {
-    queryText += ' AND is_read = false';
+  conversationId: string,
+  messageId: string,
+  senderName: string,
+  messageContent: string | null,
+  messageType: string
+): Promise<void> => {
+  // Generate notification body preview
+  let body = '';
+  if (messageType === 'text' && messageContent) {
+    body = messageContent.length > 50 
+      ? messageContent.substring(0, 50) + '...' 
+      : messageContent;
+  } else {
+    // Emoji labels for different message types
+    const typeLabels: Record<string, string> = {
+      image: '📷 Photo',
+      video: '🎥 Video',
+      audio: '🎤 Audio',
+      voice_note: '🎙️ Voice note',
+      document: '📄 Document',
+      location: '📍 Location',
+      contact: '👤 Contact',
+    };
+    body = typeLabels[messageType] || 'New message';
   }
 
-  queryText += ' ORDER BY created_at DESC LIMIT $2';
-  params.push(limit);
+  // Get conversation name for title
+  let title = senderName;
+  if (conversationId.startsWith('group_')) {
+    // Try to get group name
+    const groupId = conversationId.replace('group_', '');
+    const groupResult = await query(
+      `SELECT name FROM groups WHERE id = $1`,
+      [groupId]
+    );
+    if (groupResult.rows.length > 0) {
+      title = groupResult.rows[0].name || senderName;
+    }
+  }
 
-  const result = await query(queryText, params);
-  return result.rows as Notification[];
+  await createNotification({
+    userId,
+    type: 'message',
+    title: `${title}: ${body}`,
+    body,
+    conversationId,
+    messageId,
+  });
+};
+
+/**
+ * Get unread notifications for a user
+ */
+export const getUnreadNotifications = async (userId: string, limit: number = 50) => {
+  const result = await query(
+    `SELECT * FROM notifications
+     WHERE user_id = $1 AND is_read = false
+     ORDER BY created_at DESC
+     LIMIT $2`,
+    [userId, limit]
+  );
+  return result.rows;
 };
 
 /**
  * Mark notification as read
  */
-export const markNotificationAsRead = async (
-  notificationId: string,
-  userId: string
-): Promise<void> => {
+export const markNotificationAsRead = async (notificationId: string, userId: string): Promise<void> => {
   await query(
-    `UPDATE notifications 
+    `UPDATE notifications
      SET is_read = true, read_at = NOW()
      WHERE id = $1 AND user_id = $2`,
     [notificationId, userId]
@@ -66,28 +118,13 @@ export const markNotificationAsRead = async (
 };
 
 /**
- * Mark all notifications as read
+ * Mark all notifications as read for a user
  */
 export const markAllNotificationsAsRead = async (userId: string): Promise<void> => {
   await query(
-    `UPDATE notifications 
+    `UPDATE notifications
      SET is_read = true, read_at = NOW()
      WHERE user_id = $1 AND is_read = false`,
     [userId]
   );
 };
-
-/**
- * Delete notification
- */
-export const deleteNotification = async (
-  notificationId: string,
-  userId: string
-): Promise<void> => {
-  await query(
-    `DELETE FROM notifications 
-     WHERE id = $1 AND user_id = $2`,
-    [notificationId, userId]
-  );
-};
-
