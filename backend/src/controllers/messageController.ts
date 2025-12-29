@@ -419,6 +419,26 @@ export const getMessagesByConversationId = async (req: Request, res: Response) =
     // CRITICAL: Use CAST to handle both TEXT and UUID conversation_id formats
     console.log(`[getMessagesByConversationId] Fetching messages for conversationId: ${conversationId}, userId: ${userId}, limit: ${limit}, offset: ${offset}`);
     
+    // Debug: Check what conversation_ids actually exist in the database for this conversation
+    const debugCheck = await query(
+      `SELECT DISTINCT conversation_id, COUNT(*) as msg_count 
+       FROM messages 
+       WHERE conversation_id::text LIKE $1 || '%' OR conversation_id::text = $1
+       GROUP BY conversation_id`,
+      [conversationId]
+    );
+    console.log(`[getMessagesByConversationId] Debug - Found conversation_ids in DB:`, debugCheck.rows);
+    
+    // Check if this is a task group conversation
+    const convInfoResult = await query(
+      `SELECT is_task_group, is_group FROM conversations WHERE id = $1`,
+      [conversationId]
+    );
+    const isTaskGroup = convInfoResult.rows[0]?.is_task_group || false;
+    const isGroup = convInfoResult.rows[0]?.is_group || false;
+    
+    // For task groups and regular groups, all messages should be visible to all members
+    // The deleted_at check should be sufficient - no need for visibility_mode filtering
     const result = await query(
       `SELECT 
         m.id,
@@ -472,11 +492,28 @@ export const getMessagesByConversationId = async (req: Request, res: Response) =
       JOIN users u ON m.sender_id = u.id
       LEFT JOIN message_status ms ON m.id = ms.message_id AND ms.user_id = $2
       WHERE CAST(m.conversation_id AS TEXT) = CAST($1 AS TEXT)
-        AND (m.deleted_at IS NULL OR m.deleted_for_all = FALSE OR m.sender_id = $2)
+        AND (
+          -- Message is not deleted (deleted_at is NULL)
+          m.deleted_at IS NULL 
+          -- OR message is deleted but sender can still see their own messages
+          OR m.sender_id = $2
+        )
       ORDER BY m.created_at DESC
       LIMIT $3 OFFSET $4`,
       [conversationId, userId, limit, offset]
     );
+    
+    // Debug: Log message visibility info
+    if (result.rows.length > 0) {
+      console.log(`[getMessagesByConversationId] Found ${result.rows.length} messages for task group: ${isTaskGroup}, group: ${isGroup}`);
+      console.log(`[getMessagesByConversationId] Sample message:`, {
+        id: result.rows[0].id,
+        sender_id: result.rows[0].sender_id,
+        conversation_id: result.rows[0].conversation_id,
+        deleted_at: result.rows[0].deleted_at,
+        deleted_for_all: result.rows[0].deleted_for_all
+      });
+    }
     
     console.log(`[getMessagesByConversationId] Query for conversationId: ${conversationId}, userId: ${userId}, found ${result.rows.length} messages`);
 

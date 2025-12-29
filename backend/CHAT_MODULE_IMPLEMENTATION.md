@@ -245,8 +245,8 @@ This document describes the complete implementation of the chat module according
 ## Database Schema
 
 All message-related tables are defined in:
-- `backend/database-schema.sql` - Base schema
-- `backend/database-schema-enhanced.sql` - Enhanced schema with search and starred messages
+- `backend/database/schema-production.sql` - Complete unified production schema
+- `backend/database/schema-development.sql` - Development schema with test data
 
 ## Implementation Status
 

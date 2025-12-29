@@ -9,12 +9,19 @@ import {
   ActivityIndicator,
   TextInput,
   Image,
+  Modal,
+  Alert,
+  PermissionsAndroid,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { getConversations, pinConversation } from '../services/conversationService';
+import * as Contacts from 'expo-contacts';
+import { getConversations, pinConversation, createConversation } from '../services/conversationService';
+import { matchContactsWithUsers } from '../services/contactService';
 import { useAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationContext';
 import { waitForSocketConnection } from '../services/socket';
 
 // Corporate Purple Theme
@@ -33,7 +40,14 @@ const ConversationsScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
+  const [newChatUsers, setNewChatUsers] = useState([]);
+  const [filteredNewChatUsers, setFilteredNewChatUsers] = useState([]);
+  const [newChatSearchQuery, setNewChatSearchQuery] = useState('');
+  const [newChatLoading, setNewChatLoading] = useState(false);
+  const [syncingContacts, setSyncingContacts] = useState(false);
   const { user, logout } = useAuth();
+  const { updateCounts, updateChatCount } = useNotifications();
 
   useEffect(() => {
     loadConversations();
@@ -47,6 +61,8 @@ const ConversationsScreen = ({ navigation }) => {
       loadConversations();
       // Re-setup socket listeners when screen comes into focus
       setupSocketListeners();
+      // Update notification counts when screen comes into focus
+      updateCounts();
     });
 
     return () => {
@@ -55,6 +71,19 @@ const ConversationsScreen = ({ navigation }) => {
       unsubscribe();
     };
   }, [navigation, user]);
+
+  useEffect(() => {
+    if (newChatSearchQuery.trim() === '') {
+      setFilteredNewChatUsers(newChatUsers);
+    } else {
+      const filtered = newChatUsers.filter(
+        (user) =>
+          user.name.toLowerCase().includes(newChatSearchQuery.toLowerCase()) ||
+          (user.mobile || user.phone || '').includes(newChatSearchQuery)
+      );
+      setFilteredNewChatUsers(filtered);
+    }
+  }, [newChatSearchQuery, newChatUsers]);
 
   const loadConversations = async () => {
     try {
@@ -121,6 +150,8 @@ const ConversationsScreen = ({ navigation }) => {
       const sorted = sortConversations(normalizedData);
       setConversations(sorted);
       setFilteredConversations(sorted);
+      // Update chat count after loading conversations
+      updateChatCount();
     } catch (error) {
       console.error('Load conversations error:', error);
     } finally {
@@ -172,6 +203,8 @@ const ConversationsScreen = ({ navigation }) => {
         
         // CRITICAL FIX: Update conversation immediately for real-time updates
         updateConversationWithNewMessage(message);
+        // Update chat notification count in real-time
+        updateChatCount();
       });
 
       // Listen for message status updates (when messages are read)
@@ -179,6 +212,8 @@ const ConversationsScreen = ({ navigation }) => {
         console.log('📊 Message status update in ConversationsScreen:', data);
         if (data.status === 'read' && data.conversationId) {
           updateConversationUnreadCount(data.messageId, data.conversationId);
+          // Update chat notification count in real-time
+          updateChatCount();
         }
         
         // Also update the last message status in the conversation list
@@ -262,6 +297,8 @@ const ConversationsScreen = ({ navigation }) => {
             });
             return sorted;
           });
+          // Update chat notification count in real-time
+          updateChatCount();
         }
       });
     } catch (error) {
@@ -578,6 +615,111 @@ const ConversationsScreen = ({ navigation }) => {
     return lastMsg.message_type ? `Sent a ${lastMsg.message_type}` : 'Message';
   };
 
+  const requestContactsPermissionAndSync = async () => {
+    try {
+      setNewChatLoading(true);
+      
+      // Request contacts permission
+      const { status } = await Contacts.requestPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Please grant contacts permission to sync your contacts.',
+          [{ text: 'OK' }]
+        );
+        setNewChatLoading(false);
+        return;
+      }
+
+      // Sync contacts and load app users
+      await syncAndLoadContacts();
+    } catch (error) {
+      console.error('Permission error:', error);
+      Alert.alert('Error', 'Failed to request contacts permission');
+      setNewChatLoading(false);
+    }
+  };
+
+  const syncAndLoadContacts = async () => {
+    try {
+      setSyncingContacts(true);
+      
+      // Get device contacts
+      const { data: deviceContacts } = await Contacts.getContactsAsync({
+        fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
+      });
+
+      // Format contacts for backend
+      const formattedContacts = deviceContacts
+        .filter((contact) => contact.phoneNumbers && contact.phoneNumbers.length > 0)
+        .map((contact) => {
+          const phoneNumbers = contact.phoneNumbers.map(p => p.number);
+          return {
+            name: contact.name || 'Unknown',
+            phone: phoneNumbers[0],
+            allPhones: phoneNumbers,
+          };
+        })
+        .filter((contact) => contact.phone && contact.phone.replace(/\D/g, '').length >= 10);
+
+      // Match device contacts with registered users
+      const matchedUsers = await matchContactsWithUsers(formattedContacts);
+      
+      setNewChatUsers(matchedUsers);
+      setFilteredNewChatUsers(matchedUsers);
+    } catch (error) {
+      console.error('Match contacts error:', error);
+      Alert.alert('Error', 'Failed to match contacts. Please try again.');
+    } finally {
+      setNewChatLoading(false);
+      setSyncingContacts(false);
+    }
+  };
+
+  const handleNewChatUserSelect = async (selectedUser) => {
+    try {
+      const conversationId = await createConversation(selectedUser.id);
+      setShowNewChatModal(false);
+      setNewChatSearchQuery('');
+      navigation.navigate('Chat', {
+        conversationId,
+        conversationName: selectedUser.name,
+      });
+      // Reload conversations to show the new one
+      loadConversations();
+    } catch (error) {
+      console.error('Create conversation error:', error);
+      Alert.alert('Error', 'Failed to create conversation. Please try again.');
+    }
+  };
+
+  const renderNewChatUser = ({ item }) => {
+    const displayPhone = item.mobile || item.phone || '';
+    const formattedPhone = displayPhone.replace(/^\+91/, '');
+    
+    return (
+      <TouchableOpacity
+        style={styles.modalUserItem}
+        onPress={() => handleNewChatUserSelect(item)}
+      >
+        <View style={styles.modalAvatar}>
+          {item.profilePhotoUrl ? (
+            <Image source={{ uri: item.profilePhotoUrl }} style={styles.modalAvatarImage} />
+          ) : (
+            <Text style={styles.modalAvatarText}>
+              {item.name.charAt(0).toUpperCase()}
+            </Text>
+          )}
+        </View>
+        <View style={styles.modalUserInfo}>
+          <Text style={styles.modalUserName}>{item.name}</Text>
+          <Text style={styles.modalUserPhone}>{formattedPhone}</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   const renderConversation = ({ item }) => {
     const name = getConversationName(item);
     const lastMessage = getLastMessagePreview(item);
@@ -675,7 +817,10 @@ const ConversationsScreen = ({ navigation }) => {
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.headerButton} 
-              onPress={() => navigation.navigate('NewChat')}
+              onPress={() => {
+                setShowNewChatModal(true);
+                requestContactsPermissionAndSync();
+              }}
               activeOpacity={0.7}
             >
               <Ionicons name="create-outline" size={22} color="#FFFFFF" />
@@ -705,7 +850,10 @@ const ConversationsScreen = ({ navigation }) => {
             <Text style={styles.emptyText}>No conversations yet</Text>
             <TouchableOpacity
               style={styles.emptyButton}
-              onPress={() => navigation.navigate('NewChat')}
+              onPress={() => {
+                setShowNewChatModal(true);
+                requestContactsPermissionAndSync();
+              }}
             >
               <Text style={styles.emptyButtonText}>Start a conversation</Text>
             </TouchableOpacity>
@@ -722,6 +870,85 @@ const ConversationsScreen = ({ navigation }) => {
             }
           />
         )}
+
+        {/* New Chat Modal - Overlay Style */}
+        <Modal
+          visible={showNewChatModal}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={() => {
+            setShowNewChatModal(false);
+            setNewChatSearchQuery('');
+          }}
+        >
+          <View style={styles.modalOverlay}>
+            <TouchableOpacity
+              style={styles.modalBackdrop}
+              activeOpacity={1}
+              onPress={() => {
+                setShowNewChatModal(false);
+                setNewChatSearchQuery('');
+              }}
+            />
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalHeaderTitle}>New Chat</Text>
+                <TouchableOpacity
+                  style={styles.modalCloseButton}
+                  onPress={() => {
+                    setShowNewChatModal(false);
+                    setNewChatSearchQuery('');
+                  }}
+                >
+                  <Ionicons name="close" size={24} color={TEXT_PRIMARY} />
+                </TouchableOpacity>
+              </View>
+
+              <TextInput
+                style={styles.modalSearchInput}
+                placeholder="Search users..."
+                placeholderTextColor={TEXT_SECONDARY}
+                value={newChatSearchQuery}
+                onChangeText={setNewChatSearchQuery}
+                autoCapitalize="none"
+              />
+
+              {newChatLoading ? (
+                <View style={styles.modalCenterContainer}>
+                  <ActivityIndicator size="large" color={PRIMARY_COLOR} />
+                  {syncingContacts && (
+                    <Text style={styles.modalSyncingText}>Syncing contacts...</Text>
+                  )}
+                </View>
+              ) : filteredNewChatUsers.length === 0 ? (
+                <View style={styles.modalEmptyContainer}>
+                  <Text style={styles.modalEmptyText}>
+                    {newChatUsers.length === 0
+                      ? 'No contacts found who are using this app'
+                      : 'No users found matching your search'}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.modalSyncButton}
+                    onPress={syncAndLoadContacts}
+                    disabled={syncingContacts}
+                  >
+                    <Text style={styles.modalSyncButtonText}>
+                      {syncingContacts ? 'Syncing...' : 'Refresh Contacts'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <FlatList
+                  data={filteredNewChatUsers}
+                  renderItem={renderNewChatUser}
+                  keyExtractor={(item) => item.id}
+                  contentContainerStyle={styles.modalListContent}
+                  style={styles.modalList}
+                />
+              )}
+            </View>
+          </View>
+        </Modal>
       </View>
     </SafeAreaView>
   );
@@ -923,6 +1150,174 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 24,
+  },
+  // Modal Styles - Overlay Style
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '90%',
+    maxHeight: '80%',
+    backgroundColor: CARD_BG,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    backgroundColor: PRIMARY_COLOR,
+    paddingTop: 16,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  modalCloseButton: {
+    padding: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 20,
+    width: 36,
+    height: 36,
+  },
+  modalHeaderTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+    flex: 1,
+  },
+  modalSearchInput: {
+    backgroundColor: LIGHT_BG,
+    padding: 14,
+    margin: 16,
+    borderRadius: 12,
+    fontSize: 16,
+    fontWeight: '500',
+    borderWidth: 1,
+    borderColor: BORDER_COLOR,
+    shadowColor: SHADOW_COLOR,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 1,
+    shadowRadius: 2,
+    elevation: 1,
+    color: TEXT_PRIMARY,
+  },
+  modalCenterContainer: {
+    minHeight: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  modalList: {
+    maxHeight: 400,
+  },
+  modalSyncingText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: TEXT_SECONDARY,
+    fontWeight: '500',
+  },
+  modalEmptyContainer: {
+    minHeight: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  modalEmptyText: {
+    fontSize: 16,
+    color: TEXT_SECONDARY,
+    textAlign: 'center',
+    marginBottom: 20,
+    fontWeight: '500',
+  },
+  modalSyncButton: {
+    backgroundColor: PRIMARY_COLOR,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    shadowColor: SHADOW_COLOR,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  modalSyncButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  modalListContent: {
+    paddingBottom: 24,
+  },
+  modalUserItem: {
+    flexDirection: 'row',
+    padding: 16,
+    marginHorizontal: 16,
+    marginVertical: 4,
+    backgroundColor: CARD_BG,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: BORDER_COLOR,
+    shadowColor: SHADOW_COLOR,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  modalAvatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: PRIMARY_COLOR,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+    overflow: 'hidden',
+  },
+  modalAvatarImage: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+  },
+  modalAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  modalUserInfo: {
+    justifyContent: 'center',
+    flex: 1,
+  },
+  modalUserName: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: TEXT_PRIMARY,
+    marginBottom: 4,
+    letterSpacing: 0.2,
+  },
+  modalUserPhone: {
+    fontSize: 14,
+    color: TEXT_SECONDARY,
+    fontWeight: '500',
   },
 });
 

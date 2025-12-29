@@ -3,7 +3,8 @@ import api from './api';
 export const getTasks = async (filters = {}) => {
   try {
     const params = new URLSearchParams();
-    if (filters.type) params.append('taskType', filters.type);
+    // Backend expects 'type' query parameter, not 'taskType'
+    if (filters.type) params.append('type', filters.type);
     if (filters.status) params.append('status', filters.status);
     if (filters.category) params.append('category', filters.category);
     if (filters.priority) params.append('priority', filters.priority);
@@ -11,8 +12,8 @@ export const getTasks = async (filters = {}) => {
     const queryString = params.toString();
     const url = `/api/tasks${queryString ? `?${queryString}` : ''}`;
     const response = await api.get(url);
-    // Backend returns: { success: true, data: tasks }
-    return response.data.success ? response.data.data : response.data.tasks || [];
+    // Backend returns: { tasks: [...] }
+    return response.data.tasks || response.data.data || [];
   } catch (error) {
     console.error('Get tasks error:', error);
     throw error;

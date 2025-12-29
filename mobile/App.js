@@ -8,6 +8,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { NotificationProvider, useNotifications } from './context/NotificationContext';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 
@@ -67,57 +68,79 @@ const TaskStack = () => (
   </Stack.Navigator>
 );
 
+// Badge Component
+const Badge = ({ count }) => {
+  if (!count || count === 0) return null;
+  
+  const displayCount = count > 99 ? '99+' : count.toString();
+  const badgeWidth = count > 9 ? 'auto' : 16;
+  const paddingHorizontal = count > 9 ? 4 : 0;
+
+  return (
+    <View style={{
+      position: 'absolute',
+      right: -6,
+      top: -3,
+      backgroundColor: '#EF4444',
+      borderRadius: 8,
+      minWidth: badgeWidth,
+      height: 16,
+      paddingHorizontal: paddingHorizontal,
+      justifyContent: 'center',
+      alignItems: 'center',
+    }}>
+      <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>{displayCount}</Text>
+    </View>
+  );
+};
+
 // Main Tab Navigator
-const MainTabs = () => (
-  <Tab.Navigator
-    screenOptions={({ route }) => ({
-      tabBarIcon: ({ focused, color, size }) => {
-        let iconName;
+const MainTabs = () => {
+  const { counts } = useNotifications();
 
-        switch (route.name) {
-          case 'DashboardTab':
-            iconName = 'dashboard';
-            break;
-          case 'ChatTab':
-            iconName = 'chat-bubble';
-            break;
-          case 'TaskTab':
-            iconName = 'check-circle';
-            break;
-          case 'DocumentTab':
-            iconName = 'description';
-            break;
-          case 'ComplianceTab':
-            iconName = 'policy';
-            break;
-          case 'SettingsTab':
-            iconName = 'settings';
-            break;
-          default:
-            iconName = 'circle';
-        }
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+          let badgeCount = 0;
 
-        return (
-          <View>
-            <MaterialIcons name={iconName} size={24} color={color} />
-            {route.name === 'ChatTab' && (
-              <View style={{
-                position: 'absolute',
-                right: -6,
-                top: -3,
-                backgroundColor: '#EF4444',
-                borderRadius: 8,
-                width: 16,
-                height: 16,
-                justifyContent: 'center',
-                alignItems: 'center'
-              }}>
-                <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>4</Text>
-              </View>
-            )}
-          </View>
-        );
-      },
+          switch (route.name) {
+            case 'DashboardTab':
+              iconName = 'dashboard';
+              badgeCount = counts.dashboard;
+              break;
+            case 'ChatTab':
+              iconName = 'chat-bubble';
+              badgeCount = counts.chat;
+              break;
+            case 'TaskTab':
+              iconName = 'check-circle';
+              badgeCount = counts.tasks;
+              break;
+            case 'DocumentTab':
+              iconName = 'description';
+              badgeCount = counts.documents;
+              break;
+            case 'ComplianceTab':
+              iconName = 'policy';
+              badgeCount = counts.compliance;
+              break;
+            case 'SettingsTab':
+              iconName = 'settings';
+              badgeCount = 0; // Settings typically don't have notifications
+              break;
+            default:
+              iconName = 'circle';
+          }
+
+          return (
+            <View>
+              <MaterialIcons name={iconName} size={24} color={color} />
+              <Badge count={badgeCount} />
+            </View>
+          );
+        },
       tabBarActiveTintColor: '#a413ec', // Primary color from design
       tabBarInactiveTintColor: '#9ca3af', // Gray-400
       tabBarStyle: {
@@ -147,7 +170,8 @@ const MainTabs = () => (
     <Tab.Screen name="ComplianceTab" component={ComplianceScreen} options={{ tabBarLabel: 'Compliance' }} />
     <Tab.Screen name="SettingsTab" component={SettingsScreen} options={{ tabBarLabel: 'Settings' }} />
   </Tab.Navigator>
-);
+  );
+};
 
 const RootNavigator = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -171,8 +195,10 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <ExpoStatusBar style="dark" />
-        <RootNavigator />
+        <NotificationProvider>
+          <ExpoStatusBar style="dark" />
+          <RootNavigator />
+        </NotificationProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

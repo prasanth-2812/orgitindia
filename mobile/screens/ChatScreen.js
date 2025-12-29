@@ -280,10 +280,15 @@ const ChatScreen = ({ route, navigation }) => {
           return;
         }
         
+        const currentUserId = user?.id || user?.userId;
+        const isMyMessage = message.sender_id === currentUserId || message.senderId === currentUserId;
+        
         console.log('📨 New message received in ChatScreen:', {
           id: message.id,
           conversationId: message.conversation_id,
           senderId: message.sender_id,
+          currentUserId: currentUserId,
+          isMyMessage: isMyMessage,
           status: message.status,
           content: message.content?.substring(0, 30),
         });
@@ -297,6 +302,8 @@ const ChatScreen = ({ route, navigation }) => {
         
         // CRITICAL FIX: Update messages state IMMEDIATELY with improved deduplication
         setMessages((prev) => {
+          const isMyMessageInState = normalizedMessage.sender_id === currentUserId || normalizedMessage.senderId === currentUserId;
+          
           // Use Set for faster duplicate checking (O(1) lookup)
           const messageIds = new Set(prev.map(msg => msg.id));
           
@@ -309,16 +316,55 @@ const ChatScreen = ({ route, navigation }) => {
             );
           }
           
-          // Check if this is replacing a temp message (optimistic update)
-          const tempMessageIndex = prev.findIndex((msg) => 
-            msg.id.startsWith('temp_') && 
-            msg.content === normalizedMessage.content &&
-            Math.abs(new Date(msg.created_at || 0).getTime() - new Date(normalizedMessage.created_at || 0).getTime()) < 5000
-          );
+          // CRITICAL FIX: Check if this is replacing a temp message (optimistic update)
+          // This should be checked FIRST before checking for other duplicates
+          // This handles temp messages from both current user and other users
+          const tempMessageIndex = prev.findIndex((msg) => {
+            // Must be a temp message
+            if (!msg.id || !msg.id.startsWith('temp_')) return false;
+            
+            // Check sender match
+            const msgSenderId = msg.sender_id || msg.senderId;
+            const newSenderId = normalizedMessage.sender_id || normalizedMessage.senderId;
+            const sameSender = msgSenderId === newSenderId;
+            
+            // Check content match (normalize whitespace)
+            const msgContent = (msg.content || '').trim();
+            const newContent = (normalizedMessage.content || '').trim();
+            const sameContent = msgContent === newContent;
+            
+            // Check time difference (allow up to 15 seconds for network delay)
+            const msgTime = new Date(msg.created_at || 0).getTime();
+            const newTime = new Date(normalizedMessage.created_at || 0).getTime();
+            const timeDiff = Math.abs(msgTime - newTime);
+            
+            // Match if: temp message, same sender, same content, and within 15 seconds
+            const isMatch = sameSender && sameContent && timeDiff < 15000;
+            
+            if (isMatch) {
+              console.log('🔍 Temp message match found:', {
+                tempId: msg.id,
+                tempContent: msgContent.substring(0, 20),
+                tempSender: msgSenderId,
+                tempTime: new Date(msg.created_at).toISOString(),
+                realId: normalizedMessage.id,
+                realContent: newContent.substring(0, 20),
+                realSender: newSenderId,
+                realTime: new Date(normalizedMessage.created_at).toISOString(),
+                timeDiff: timeDiff + 'ms'
+              });
+            }
+            
+            return isMatch;
+          });
           
           if (tempMessageIndex !== -1) {
             // Replace temp message with real one
-            console.log('✅ Replacing temp message with real message');
+            console.log('✅ Replacing temp message with real message:', {
+              tempId: prev[tempMessageIndex].id,
+              realId: normalizedMessage.id,
+              tempIndex: tempMessageIndex
+            });
             const updated = [...prev];
             updated[tempMessageIndex] = normalizedMessage;
             // Sort after replacement to ensure correct order
@@ -328,6 +374,48 @@ const ChatScreen = ({ route, navigation }) => {
               return timeA - timeB;
             });
             return updated;
+          }
+          
+          // CRITICAL FIX: For messages from current user, check for duplicate by content + sender + time
+          // This handles the case where the same message is received twice via socket (shouldn't happen, but safety check)
+          if (isMyMessageInState) {
+            const duplicateIndex = prev.findIndex((msg) => {
+              // Skip temp messages (already handled above)
+              if (msg.id && msg.id.startsWith('temp_')) return false;
+              
+              const msgSenderId = msg.sender_id || msg.senderId;
+              const msgIsMine = msgSenderId === currentUserId;
+              const msgContent = (msg.content || '').trim();
+              const newContent = (normalizedMessage.content || '').trim();
+              const sameContent = msgContent === newContent;
+              
+              const timeDiff = Math.abs(
+                new Date(msg.created_at || 0).getTime() - 
+                new Date(normalizedMessage.created_at || 0).getTime()
+              );
+              
+              // Match if: same sender, same content, and within 5 seconds (tighter window for duplicates)
+              return msgIsMine && sameContent && timeDiff < 5000;
+            });
+            
+            if (duplicateIndex !== -1) {
+              // Replace the duplicate (update status if needed)
+              console.log('✅ Replacing duplicate message with updated version:', {
+                oldId: prev[duplicateIndex].id,
+                newId: normalizedMessage.id,
+                oldStatus: prev[duplicateIndex].status,
+                newStatus: normalizedMessage.status
+              });
+              const updated = [...prev];
+              updated[duplicateIndex] = normalizedMessage;
+              // Sort after replacement to ensure correct order
+              updated.sort((a, b) => {
+                const timeA = new Date(a.created_at || 0).getTime();
+                const timeB = new Date(b.created_at || 0).getTime();
+                return timeA - timeB;
+              });
+              return updated;
+            }
           }
           
           // CRITICAL FIX: Add new message immediately and sort by timestamp
@@ -346,7 +434,7 @@ const ChatScreen = ({ route, navigation }) => {
         setTimeout(() => scrollToBottom(), 50);
         
         // Mark messages as read when new message arrives (user is viewing chat)
-        const currentUserId = user?.id || user?.userId;
+        // Note: currentUserId is already declared above in the socket.on handler
         if (normalizedMessage.sender_id !== currentUserId) {
           // CRITICAL FIX: Mark as read immediately for real-time status updates
           setTimeout(() => {

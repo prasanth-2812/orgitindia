@@ -133,6 +133,9 @@ app.use('/api/super-admin/settings', platformSettingsRoutes);
 // Compliance Routes (accessible by both Super Admin and Admin)
 app.use('/api/compliance', complianceRoutes);
 
+// Make Socket.IO instance available to routes (matching message-backend pattern)
+app.set('io', io);
+
 // Setup Socket.io handlers
 setupMessageHandlers(io);
 

@@ -190,12 +190,15 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
 };
 
 /**
- * Create or get 1-to-1 conversation (used by mobile NewChatScreen) - matching message-backend
+ * Create or get 1-to-1 conversation (used by mobile NewChatScreen) - matching message-backend EXACTLY
  */
 export const createConversation = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
     const { otherUserId } = req.body;
+    
+    // Get Socket.IO instance from app (matching message-backend pattern)
+    const io = (req as any).app.get('io');
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -209,54 +212,81 @@ export const createConversation = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Cannot create conversation with yourself' });
     }
 
-    // Check if conversation already exists (non-group)
-    // Handle both UUID and TEXT conversation_id types
+    // Check if conversation already exists (non-group, non-task)
     const existing = await query(
       `SELECT CAST(c.id AS TEXT) as id
        FROM conversations c
        INNER JOIN conversation_members cm1 ON CAST(c.id AS TEXT) = CAST(cm1.conversation_id AS TEXT)
        INNER JOIN conversation_members cm2 ON CAST(c.id AS TEXT) = CAST(cm2.conversation_id AS TEXT)
-       WHERE cm1.user_id = $1 AND cm2.user_id = $2 AND COALESCE(c.is_group, FALSE) = FALSE`,
+       WHERE cm1.user_id = $1 AND cm2.user_id = $2 
+         AND COALESCE(c.is_group, FALSE) = FALSE
+         AND COALESCE(c.is_task_group, FALSE) = FALSE`,
       [userId, otherUserId]
     );
 
+    let conversationId: string;
+    let isNewConversation = false;
+
     if (existing.rows.length > 0) {
-      return res.json({ conversationId: existing.rows[0].id });
+      conversationId = existing.rows[0].id;
+    } else {
+      // Create new conversation
+      const client = await getClient();
+      try {
+        await client.query('BEGIN');
+
+        const convResult = await client.query(
+          `INSERT INTO conversations (id, type, is_group, is_task_group, created_by, created_at, updated_at)
+           VALUES (gen_random_uuid(), 'direct', FALSE, FALSE, $1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+           RETURNING id`,
+          [userId]
+        );
+        conversationId = String(convResult.rows[0].id);
+
+        await client.query(
+          'INSERT INTO conversation_members (conversation_id, user_id, role, joined_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)',
+          [conversationId, userId, 'member']
+        );
+
+        await client.query(
+          'INSERT INTO conversation_members (conversation_id, user_id, role, joined_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)',
+          [conversationId, otherUserId, 'member']
+        );
+
+        await client.query('COMMIT');
+        isNewConversation = true;
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      } finally {
+        client.release();
+      }
     }
 
-    // Create new conversation
-    const client = await getClient();
-    try {
-      await client.query('BEGIN');
+    // Automatically join both users to the conversation room if they're online (matching message-backend)
+    if (io && conversationId) {
+      // Join creator to room
+      const creatorSockets = await io.in(`user_${userId}`).fetchSockets();
+      for (const socket of creatorSockets) {
+        socket.join(conversationId);
+        console.log(`User ${userId} auto-joined conversation room ${conversationId}`);
+      }
 
-      const convResult = await client.query(
-        'INSERT INTO conversations (is_group, created_by) VALUES (FALSE, $1) RETURNING id',
-        [userId]
-      );
-      const conversationId = convResult.rows[0].id;
+      // Join other user to room
+      const otherUserSockets = await io.in(`user_${otherUserId}`).fetchSockets();
+      for (const socket of otherUserSockets) {
+        socket.join(conversationId);
+        console.log(`User ${otherUserId} auto-joined conversation room ${conversationId}`);
+      }
 
-      // Cast conversation_id to TEXT for consistency
-      const conversationIdText = typeof conversationId === 'string' ? conversationId : String(conversationId);
-
-      await client.query(
-        'INSERT INTO conversation_members (conversation_id, user_id, role) VALUES ($1, $2, $3)',
-        [conversationIdText, userId, 'member']
-      );
-
-      await client.query(
-        'INSERT INTO conversation_members (conversation_id, user_id, role) VALUES ($1, $2, $3)',
-        [conversationIdText, otherUserId, 'member']
-      );
-
-      await client.query('COMMIT');
-
-      res.status(201).json({ conversationId: conversationIdText });
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
+      // Notify both users about the new conversation (if it's new)
+      if (isNewConversation) {
+        io.to(`user_${userId}`).emit('conversation_created', { conversationId });
+        io.to(`user_${otherUserId}`).emit('conversation_created', { conversationId });
+      }
     }
+
+    res.status(isNewConversation ? 201 : 200).json({ conversationId });
   } catch (error: any) {
     console.error('Create conversation error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -288,8 +318,8 @@ export const createGroupConversation = async (req: AuthRequest, res: Response) =
 
       // Create group conversation
       const convResult = await client.query(
-        `INSERT INTO conversations (name, is_group, group_photo, created_by)
-         VALUES ($1, TRUE, $2, $3)
+        `INSERT INTO conversations (id, type, name, is_group, group_photo, created_by)
+         VALUES (gen_random_uuid(), 'group', $1, TRUE, $2, $3)
          RETURNING id`,
         [name, group_photo || null, userId]
       );
@@ -341,8 +371,8 @@ export const createTaskGroupConversation = async (req: AuthRequest, res: Respons
 
       // Create task group conversation
       const convResult = await client.query(
-        `INSERT INTO conversations (name, is_group, is_task_group, task_id, created_by)
-         VALUES ($1, TRUE, TRUE, $2, $3)
+        `INSERT INTO conversations (id, type, name, is_group, is_task_group, task_id, created_by)
+         VALUES (gen_random_uuid(), 'group', $1, TRUE, TRUE, $2, $3)
          RETURNING id`,
         [name, taskId, userId]
       );

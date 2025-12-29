@@ -70,12 +70,12 @@ Execute the schema script:
 
 ```bash
 # Using psql
-psql -U postgres -d orgit -f database-schema.sql
+psql -U postgres -d orgit -f database/schema-production.sql
 
 # Or in pgAdmin Query Tool
 # 1. Connect to 'orgit' database
 # 2. Open Query Tool
-# 3. Copy and paste contents of database-schema.sql
+# 3. Copy and paste contents of database/schema-production.sql
 # 4. Execute
 ```
 
@@ -120,7 +120,7 @@ DB_PASSWORD=secure_password_here
 - Create the database first: `CREATE DATABASE orgit;`
 
 ### Error: "relation does not exist"
-- Run the schema script: `database-schema.sql`
+- Run the schema script: `database/schema-production.sql`
 
 ### Error: "password authentication failed"
 - Check your `.env` file has correct password

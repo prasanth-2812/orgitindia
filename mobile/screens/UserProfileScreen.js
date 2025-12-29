@@ -94,15 +94,15 @@ const UserProfileScreen = ({ route, navigation }) => {
 
       <View style={styles.content}>
         <View style={styles.avatarContainer}>
-          {user.profile_photo ? (
-            <Image source={{ uri: user.profile_photo }} style={styles.avatarImage} />
+          {(user.profile_photo || user.profilePhotoUrl) ? (
+            <Image source={{ uri: user.profile_photo || user.profilePhotoUrl }} style={styles.avatarImage} />
           ) : (
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>{initials}</Text>
             </View>
           )}
           <Text style={styles.nameText}>{user.name}</Text>
-          <Text style={styles.phoneText}>{user.contact_number || user.phone}</Text>
+          <Text style={styles.phoneText}>{user.contact_number || user.phone || user.mobile}</Text>
         </View>
 
         <View style={styles.section}>
@@ -119,7 +119,7 @@ const UserProfileScreen = ({ route, navigation }) => {
           <Text style={styles.sectionTitle}>Contact</Text>
           <View style={styles.sectionCard}>
             <Text style={styles.sectionLabel}>Phone number</Text>
-            <Text style={styles.sectionValue}>{user.contact_number || user.phone}</Text>
+            <Text style={styles.sectionValue}>{user.contact_number || user.phone || user.mobile}</Text>
           </View>
         </View>
       </View>

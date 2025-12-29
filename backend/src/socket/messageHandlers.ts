@@ -1,7 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import { createMessage, updateMessageStatus, markMessagesAsRead } from '../services/messageService';
 import { verifyToken } from '../utils/jwt';
-import { query } from '../config/database';
+import { query, getClient } from '../config/database';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -317,187 +317,183 @@ export const setupMessageHandlers = (io: Server) => {
           return;
         }
 
-        // Use 'text' if provided, otherwise use 'content'
+        // Use 'text' if provided, otherwise use 'content' (matching message-backend)
         const messageContent = text || content;
 
-        // Handle direct_<userId> format conversations (they may not exist in conversations table)
-        let isGroup = false;
-        let otherUserId: string | null = null;
-
+        // Handle backward compatibility: If conversationId is in direct_<userId> format,
+        // find or create the UUID conversation between the two users
+        let actualConversationId = conversationId;
+        
         if (conversationId.startsWith('direct_')) {
-          // Direct conversation - extract other user ID
-          otherUserId = conversationId.replace('direct_', '');
-
-          // Verify the other user exists
-          const userCheck = await query('SELECT id FROM users WHERE id = $1', [otherUserId]);
-          if (userCheck.rows.length === 0) {
-            socket.emit('error', { message: 'Other user not found' });
-            return;
-          }
-
-          // For direct conversations, ensure both users are in conversation_members
-          // This allows messages to be queried later
-          await query(
-            `INSERT INTO conversation_members (conversation_id, user_id, role, joined_at)
-             VALUES ($1, $2, 'member', CURRENT_TIMESTAMP)
-             ON CONFLICT (conversation_id, user_id) DO NOTHING`,
-            [conversationId, userId]
-          );
-          await query(
-            `INSERT INTO conversation_members (conversation_id, user_id, role, joined_at)
-             VALUES ($1, $2, 'member', CURRENT_TIMESTAMP)
-             ON CONFLICT (conversation_id, user_id) DO NOTHING`,
-            [conversationId, otherUserId]
-          );
-
-          // Also ensure conversation exists in conversations table (for queries)
-          // CRITICAL FIX: Handle conversations table with or without 'type' column
-          // Try with type column first (if it exists), then fallback to without
-          try {
-            // First try with type column (for databases that have it)
-            await query(
-              `INSERT INTO conversations (id, type, is_group, is_task_group, created_at, updated_at)
-               VALUES ($1, 'direct', FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-               ON CONFLICT (id) DO NOTHING`,
-              [conversationId]
-            );
-          } catch (error: any) {
-            // If error is about type column not existing, try without it
-            if (error.message && error.message.includes('type')) {
-              await query(
-                `INSERT INTO conversations (id, is_group, is_task_group, created_at, updated_at)
-                 VALUES ($1, FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                 ON CONFLICT (id) DO NOTHING`,
-                [conversationId]
-              );
-            } else {
-              // If it's a different error (like constraint violation), that's okay - conversation might already exist
-              console.log(`[send_message] Conversation ${conversationId} might already exist or error:`, error.message);
-            }
-          }
-        } else {
-          // UUID format - verify user is member and get conversation details
-          const memberCheck = await query(
-            'SELECT * FROM conversation_members WHERE conversation_id::text = $1::text AND user_id = $2',
-            [conversationId, userId]
-          );
-
-          if (memberCheck.rows.length === 0) {
-            socket.emit('error', { message: 'Not a member of this conversation' });
-            return;
-          }
-
-          // Get conversation details to determine if it's a group or direct chat
-          const convResult = await query(
-            'SELECT is_group, is_task_group FROM conversations WHERE id::text = $1::text',
-            [conversationId]
-          );
-
-          if (convResult.rows.length === 0) {
-            socket.emit('error', { message: 'Conversation not found' });
-            return;
-          }
-
-          isGroup = convResult.rows[0].is_group || convResult.rows[0].is_task_group;
-        }
-
-        // For direct conversations, get the other user's ID
-        let receiverId: string | null = null;
-        let groupId: string | null = null;
-
-        if (!isGroup) {
-          // Use otherUserId if we extracted it, otherwise query for it
-          if (otherUserId) {
-            receiverId = otherUserId;
-          } else {
+          // Extract the user ID from direct_<userId> format
+          const extractedUserId = conversationId.replace('direct_', '');
+          
+          // Determine the other user ID
+          let otherUserId: string;
+          if (extractedUserId === userId) {
+            // The conversationId is using sender's ID - find the other user from conversation_members
             const otherMemberResult = await query(
               'SELECT user_id FROM conversation_members WHERE conversation_id::text = $1::text AND user_id != $2 LIMIT 1',
               [conversationId, userId]
             );
-            if (otherMemberResult.rows.length > 0) {
-              receiverId = otherMemberResult.rows[0].user_id;
+            if (otherMemberResult.rows.length === 0) {
+              socket.emit('error', { message: 'Invalid conversation: cannot find other user. Please create conversation first.' });
+              return;
+            }
+            otherUserId = otherMemberResult.rows[0].user_id;
+          } else {
+            otherUserId = extractedUserId;
+          }
+
+          // Prevent sending message to yourself
+          if (otherUserId === userId) {
+            socket.emit('error', { message: 'Cannot send message to yourself' });
+            return;
+          }
+
+          // Check if a UUID conversation already exists between these two users
+          const existingConversation = await query(
+            `SELECT CAST(c.id AS TEXT) as id
+             FROM conversations c
+             INNER JOIN conversation_members cm1 ON CAST(c.id AS TEXT) = CAST(cm1.conversation_id AS TEXT)
+             INNER JOIN conversation_members cm2 ON CAST(c.id AS TEXT) = CAST(cm2.conversation_id AS TEXT)
+             WHERE cm1.user_id = $1 AND cm2.user_id = $2 
+               AND COALESCE(c.is_group, FALSE) = FALSE
+               AND COALESCE(c.is_task_group, FALSE) = FALSE
+             LIMIT 1`,
+            [userId, otherUserId]
+          );
+
+          if (existingConversation.rows.length > 0) {
+            // Use the existing UUID conversation
+            actualConversationId = existingConversation.rows[0].id;
+            console.log(`[send_message] Found existing UUID conversation ${actualConversationId} for direct_${extractedUserId}, using UUID`);
+          } else {
+            // Create a new UUID conversation (matching message-backend flow)
+            const client = await getClient();
+            try {
+              await client.query('BEGIN');
+
+              const convResult = await client.query(
+                `INSERT INTO conversations (id, type, is_group, is_task_group, created_by, created_at, updated_at)
+                 VALUES (gen_random_uuid(), 'direct', FALSE, FALSE, $1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                 RETURNING id`,
+                [userId]
+              );
+              actualConversationId = String(convResult.rows[0].id);
+
+              await client.query(
+                'INSERT INTO conversation_members (conversation_id, user_id, role, joined_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)',
+                [actualConversationId, userId, 'member']
+              );
+
+              await client.query(
+                'INSERT INTO conversation_members (conversation_id, user_id, role, joined_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)',
+                [actualConversationId, otherUserId, 'member']
+              );
+
+              await client.query('COMMIT');
+              console.log(`[send_message] Created new UUID conversation ${actualConversationId} for direct_${extractedUserId}`);
+            } catch (error) {
+              await client.query('ROLLBACK');
+              throw error;
+            } finally {
+              client.release();
             }
           }
-        } else {
-          // For groups, we still need to store the group_id reference
-          // Check if there's a group_id in the conversation or use conversationId
-          groupId = conversationId; // Use conversationId as group reference
         }
 
-        // Get sender info - matching message-backend: use profile_photo_url
+        // Verify user is member of conversation (matching message-backend EXACTLY)
+        const memberCheck = await query(
+          'SELECT * FROM conversation_members WHERE conversation_id = $1 AND user_id = $2',
+          [actualConversationId, userId]
+        );
+
+        if (memberCheck.rows.length === 0) {
+          socket.emit('error', { message: 'Not a member of this conversation' });
+          return;
+        }
+
+        // Get conversation details to determine receiver_id or group_id
+        const convResult = await query(
+          'SELECT is_group, is_task_group FROM conversations WHERE id = $1',
+          [actualConversationId]
+        );
+
+        if (convResult.rows.length === 0) {
+          socket.emit('error', { message: 'Conversation not found' });
+          return;
+        }
+
+        const isGroup = convResult.rows[0].is_group || convResult.rows[0].is_task_group;
+
+        // Determine receiver_id for message insertion
+        // NOTE: For task groups and new schema group conversations, we use conversation_id only
+        // Do NOT set group_id as it references the old 'groups' table, not 'conversations'
+        let receiverId: string | null = null;
+
+        if (!isGroup) {
+          // For direct conversations, get the other user's ID
+          const otherMemberResult = await query(
+            'SELECT user_id FROM conversation_members WHERE conversation_id = $1 AND user_id != $2 LIMIT 1',
+            [actualConversationId, userId]
+          );
+          if (otherMemberResult.rows.length > 0) {
+            receiverId = otherMemberResult.rows[0].user_id;
+          }
+        }
+        // For group/task group conversations: use conversation_id only, leave group_id NULL
+
+        // Get sender info (matching message-backend: use profile_photo)
         const userResult = await query(
-          'SELECT name, profile_photo_url FROM users WHERE id = $1',
+          'SELECT name, COALESCE(profile_photo, profile_photo_url) as profile_photo FROM users WHERE id = $1',
           [userId]
         );
         const senderName = userResult.rows[0]?.name || 'Unknown';
-        const senderPhoto = userResult.rows[0]?.profile_photo_url || null;
+        const senderPhoto = userResult.rows[0]?.profile_photo || null;
 
-        // Save message to database - matching EXACT table structure from database
-        // Table has: receiver_id, group_id, conversation_id, sender_organization_id, visibility_mode, etc.
-        console.log(`[send_message] Inserting message into database:`, {
-          conversationId,
-          userId,
-          organizationId,
-          receiverId,
-          groupId,
-          messageContent: messageContent?.substring(0, 50),
-          messageType,
-        });
-
-        // INSERT matching the exact table structure shown by user
-        // Table columns: sender_id, receiver_id, group_id, conversation_id, message_type, content,
-        // media_url, file_name, file_size, mime_type, visibility_mode, sender_organization_id,
-        // reply_to_message_id, media_thumbnail, duration, edited_at, deleted_at,
-        // location_lat, location_lng, location_address, is_live_location, live_location_expires_at,
-        // deleted_for_all, status
+        // Save message to database
+        // For task groups and new schema: use conversation_id only, leave group_id NULL
+        // The CHECK constraint allows conversation_id to satisfy it (via fix-messages-check-constraint.sql)
         const result = await query(
           `INSERT INTO messages (
-            sender_id, receiver_id, group_id, conversation_id, message_type, content, 
-            media_url, file_name, file_size, mime_type, visibility_mode, sender_organization_id,
-            reply_to_message_id, media_thumbnail, duration, edited_at, deleted_at,
+            conversation_id, sender_id, content, message_type, media_url, media_thumbnail,
+            file_name, file_size, duration, reply_to_message_id,
             location_lat, location_lng, location_address, is_live_location, live_location_expires_at,
-            deleted_for_everyone, status
+            receiver_id, sender_organization_id, visibility_mode, status
           )
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, 'sent')
            RETURNING *`,
           [
-            userId, // $1: sender_id
-            receiverId || null, // $2: receiver_id (for direct messages)
-            groupId || null, // $3: group_id (for group messages)
-            conversationId, // $4: conversation_id (primary identifier)
-            messageType, // $5: message_type
-            messageContent, // $6: content
-            mediaUrl || null, // $7: media_url
-            fileName || null, // $8: file_name
-            fileSize || null, // $9: file_size
-            mimeType || null, // $10: mime_type
-            'shared_to_group', // $11: visibility_mode (default as per table data)
-            organizationId, // $12: sender_organization_id (required, NOT NULL)
-            replyToMessageId || null, // $13: reply_to_message_id
-            mediaThumbnail || null, // $14: media_thumbnail
-            duration || null, // $15: duration
-            null, // $16: edited_at (set when message is edited)
-            null, // $17: deleted_at (set when message is deleted)
-            locationLat || null, // $18: location_lat
-            locationLng || null, // $19: location_lng
-            locationAddress || null, // $20: location_address
-            isLiveLocation || false, // $21: is_live_location
-            liveLocationExpiresAt || null, // $22: live_location_expires_at
-            false, // $23: deleted_for_all (default false)
-            'sent', // $24: status (initial status)
+            actualConversationId, // $1: conversation_id (UUID format)
+            userId, // $2: sender_id
+            messageContent, // $3: content
+            messageType, // $4: message_type
+            mediaUrl || null, // $5: media_url
+            mediaThumbnail || null, // $6: media_thumbnail
+            fileName || null, // $7: file_name
+            fileSize || null, // $8: file_size
+            duration || null, // $9: duration
+            replyToMessageId || null, // $10: reply_to_message_id
+            locationLat || null, // $11: location_lat
+            locationLng || null, // $12: location_lng
+            locationAddress || null, // $13: location_address
+            isLiveLocation || false, // $14: is_live_location
+            liveLocationExpiresAt || null, // $15: live_location_expires_at
+            receiverId || null, // $16: receiver_id (for direct messages only, NULL for groups)
+            organizationId, // $17: sender_organization_id
+            'shared_to_group', // $18: visibility_mode
           ]
         );
 
-        if (!result.rows || result.rows.length === 0) {
-          throw new Error('Message insertion failed - no rows returned');
-        }
-
         const message = result.rows[0];
+        
+        // Debug: Log the actual conversation_id stored in the database
         console.log(`[send_message] Message inserted successfully:`, {
           messageId: message.id,
           conversationId: message.conversation_id,
-          status: message.status,
-          content: message.content?.substring(0, 30),
+          actualConversationId: actualConversationId,
+          match: message.conversation_id === actualConversationId
         });
 
         // Get reply info if exists
@@ -518,7 +514,7 @@ export const setupMessageHandlers = (io: Server) => {
         // Build message payload (matching message-backend structure exactly)
         const messagePayload: any = {
           ...message, // Start with all DB fields
-          conversation_id: conversationId,
+          conversation_id: actualConversationId,
           sender_id: userId,
           content: message.content,
           text: message.content, // Also include 'text' for compatibility
@@ -529,117 +525,104 @@ export const setupMessageHandlers = (io: Server) => {
           status: 'sent', // Initial status (matching message-backend)
         };
 
-        // Get conversation members first (use ::text casting for compatibility)
+        // Get conversation members first (matching message-backend)
         const conversationMembers = await query(
-          'SELECT user_id FROM conversation_members WHERE conversation_id::text = $1::text',
-          [conversationId]
+          'SELECT user_id FROM conversation_members WHERE conversation_id = $1',
+          [actualConversationId]
         );
 
-        // CRITICAL: Emit to both conversation room AND personal rooms
-        // 1. Emit to conversation room (users who joined the conversation)
-        io.to(conversationId).emit('new_message', messagePayload);
+        console.log(`[send_message] Emitting to conversation ${actualConversationId}, members: ${conversationMembers.rows.length}`, 
+          conversationMembers.rows.map((r: any) => r.user_id));
 
-        // 2. Emit to each member's personal room (this ensures messages are received even if user hasn't joined conversation room)
-        // Matching message-backend: user_${userId} format
+        // Emit to all members in the conversation room (matching message-backend EXACTLY)
+        io.to(actualConversationId).emit('new_message', messagePayload);
+        
+        // Also emit to each member's personal room so ConversationsScreen can receive updates (matching message-backend)
         for (const member of conversationMembers.rows) {
-          const personalRoom = `user_${member.user_id}`;
-          io.to(personalRoom).emit('new_message', messagePayload);
-          console.log(`[send_message] Emitted new_message to personal room: ${personalRoom}`);
+          io.to(`user_${member.user_id}`).emit('new_message', messagePayload);
+          console.log(`[send_message] Emitted to personal room: user_${member.user_id}`);
         }
 
-        console.log(`[send_message] Emitted new_message to conversation room: ${conversationId}, members: ${conversationMembers.rows.length}`);
-
-        // Update conversation updated_at (handle both TEXT and UUID formats)
+        // Update conversation updated_at (matching message-backend)
         await query(
-          `UPDATE conversations SET updated_at = CURRENT_TIMESTAMP 
-           WHERE CAST(id AS TEXT) = CAST($1 AS TEXT)`,
-          [conversationId]
-        ).catch(() => {
-          // If conversation doesn't exist yet, that's okay - it will be created on next message
-          console.log(`[send_message] Conversation ${conversationId} not found in conversations table, skipping update`);
-        });
+          'UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = $1',
+          [actualConversationId]
+        );
 
-        // STEP 5: Message Status Update (Delivered) - Exact flow from document
-        // Check which users are online and update status to 'delivered' for them
+        // Message lifecycle: Sent → Delivered → Read
+        // Message starts as 'sent' (already set in INSERT)
+        message.status = 'sent';
+
+        // Check which users are online and update to 'delivered' for them (matching message-backend)
         const otherMembers = await query(
-          'SELECT user_id FROM conversation_members WHERE conversation_id::text = $1::text AND user_id != $2',
-          [conversationId, userId]
+          'SELECT user_id FROM conversation_members WHERE conversation_id = $1 AND user_id != $2',
+          [actualConversationId, userId]
         );
 
         const onlineUsers: string[] = [];
         for (const member of otherMembers.rows) {
-          // Check if user is in their personal room (online)
-          // Matching message-backend: user_${userId} format
           const sockets = await io.in(`user_${member.user_id}`).fetchSockets();
           if (sockets.length > 0) {
             onlineUsers.push(member.user_id);
-
-            // Update message status to 'delivered' in database
+            // Update status to delivered for online users
             await query(
-              `UPDATE messages SET status = $1 WHERE id = $2`,
+              'UPDATE messages SET status = $1 WHERE id = $2',
               ['delivered', message.id]
             );
-
-            console.log(`[send_message] User ${member.user_id} is online, message ${message.id} marked as delivered`);
           }
         }
 
-        // Emit status update if delivered (matching message-backend logic exactly)
+        // Emit status update if delivered (matching message-backend)
         if (onlineUsers.length > 0) {
-          messagePayload.status = 'delivered';
-
-          // Emit to conversation room
-          io.to(conversationId).emit('message_status_update', {
+          message.status = 'delivered';
+          io.to(actualConversationId).emit('message_status_update', {
             messageId: message.id,
-            conversationId,
+            conversationId: actualConversationId,
             status: 'delivered',
           });
-
-          // Also emit to each member's personal room - matching message-backend: user_${userId}
-          // This ensures ConversationsScreen receives status updates
+          
+          // Also emit to each member's personal room (matching message-backend)
           for (const member of conversationMembers.rows) {
             io.to(`user_${member.user_id}`).emit('message_status_update', {
               messageId: message.id,
-              conversationId,
+              conversationId: actualConversationId,
               status: 'delivered',
             });
           }
-
-          console.log(`[send_message] Emitted 'delivered' status update for message ${message.id} to ${onlineUsers.length} online users`);
         }
 
-        // Create notifications for offline users
+        // Create notifications for offline users (matching message-backend)
         for (const member of otherMembers.rows) {
           if (!onlineUsers.includes(member.user_id)) {
-            const notificationBody = messageContent
+            const notificationBody = messageContent 
               ? (messageContent.length > 50 ? messageContent.substring(0, 50) + '...' : messageContent)
-              : (messageType === 'image' ? '📷 Photo'
+              : (messageType === 'image' ? '📷 Photo' 
                 : messageType === 'video' ? '🎥 Video'
-                  : messageType === 'audio' || messageType === 'voice' ? '🎤 Audio'
-                    : messageType === 'document' ? '📄 Document'
-                      : messageType === 'location' ? '📍 Location'
-                        : `Sent a ${messageType}`);
-
+                : messageType === 'audio' || messageType === 'voice' ? '🎤 Audio'
+                : messageType === 'document' ? '📄 Document'
+                : messageType === 'location' ? '📍 Location'
+                : `Sent a ${messageType}`);
+            
             await query(
-              `INSERT INTO notifications (user_id, type, title, body, conversation_id, message_id, created_at)
-               VALUES ($1, 'message', $2, $3, $4, $5, NOW())`,
+              `INSERT INTO notifications (user_id, type, title, body, conversation_id, message_id)
+               VALUES ($1, 'message', $2, $3, $4, $5)`,
               [
                 member.user_id,
-                `New message in conversation`,
+                actualConversationId ? `New message in ${actualConversationId}` : `New message from ${senderName}`,
                 notificationBody,
-                conversationId,
+                actualConversationId,
                 message.id
               ]
             );
           }
         }
       } catch (error: any) {
-        // CRITICAL FIX: Use variables from outer scope or data object
-        const errorConversationId = (typeof conversationId !== 'undefined' ? conversationId : null) || data?.conversationId || 'unknown';
-        const errorUserId = (typeof userId !== 'undefined' ? userId : null) || socket.userId || 'unknown';
-        const errorOrganizationId = (typeof organizationId !== 'undefined' ? organizationId : null) || socket.organizationId || 'unknown';
-        const errorMessageContent = (typeof messageContent !== 'undefined' ? messageContent : null) || data?.content || data?.text || 'unknown';
-        const errorMessageType = (typeof messageType !== 'undefined' ? messageType : null) || data?.messageType || 'unknown';
+        // CRITICAL FIX: Use data object for error logging (variables may not be in scope)
+        const errorConversationId = data?.conversationId || 'unknown';
+        const errorUserId = socket.userId || 'unknown';
+        const errorOrganizationId = socket.organizationId || 'unknown';
+        const errorMessageContent = data?.content || data?.text || 'unknown';
+        const errorMessageType = data?.messageType || 'unknown';
 
         console.error('[send_message] Error:', error.message);
         console.error('[send_message] Error stack:', error.stack);

@@ -66,10 +66,19 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
     const params: any[] = [userId];
     const conditions: string[] = [];
 
-    // Always filter by task_type if provided
-    if (type) {
-      conditions.push(`t.task_type = $${params.length + 1}`);
-      params.push(type);
+    // Filter by task type (one_time vs recurring)
+    // Priority: task_type field takes precedence
+    // - If task_type = 'one_time': always show in one_time (regardless of recurrence_type)
+    // - If task_type = 'recurring': always show in recurring
+    // - If task_type IS NULL: use recurrence_type to determine
+    if (type === 'recurring') {
+      // Show recurring tasks: explicitly marked as recurring OR (no type set AND has recurrence_type)
+      conditions.push(`(t.task_type = $${params.length + 1} OR (t.task_type IS NULL AND t.recurrence_type IS NOT NULL))`);
+      params.push('recurring');
+    } else if (type === 'one_time') {
+      // Show one-time tasks: explicitly marked as one_time OR (no type set AND no recurrence)
+      conditions.push(`(t.task_type = $${params.length + 1} OR (t.task_type IS NULL AND t.recurrence_type IS NULL))`);
+      params.push('one_time');
     }
 
     if (status) {
@@ -215,41 +224,96 @@ export const createTask = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Title and due date are required' });
     }
 
+    // Get user's organization_id
+    let organizationId = req.user?.organizationId;
+    if (!organizationId) {
+      // Fetch from database if not in JWT
+      const orgResult = await client.query(
+        `SELECT organization_id FROM user_organizations WHERE user_id = $1 LIMIT 1`,
+        [userId]
+      );
+      organizationId = orgResult.rows[0]?.organization_id || null;
+    }
+    
+    // Check if organization_id column exists and is required
+    const orgIdColumnCheck = await client.query(
+      `SELECT column_name, is_nullable 
+       FROM information_schema.columns 
+       WHERE table_name = 'tasks' AND column_name = 'organization_id'`
+    );
+    const orgIdColumn = orgIdColumnCheck.rows[0];
+    const requiresOrganizationId = orgIdColumn && orgIdColumn.is_nullable === 'NO';
+    
+    if (requiresOrganizationId && !organizationId) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ 
+        error: 'Organization ID is required. User must be associated with an organization.' 
+      });
+    }
+
     // Insert task
-    // Use created_by (message-backend format) - migration script adds this column
-    // If created_by doesn't exist yet, we'll use creator_id as fallback
-    let taskResult;
+    // Check which columns exist - handle both created_by and creator_id, and organization_id
     const columnCheck = await client.query(
       `SELECT column_name FROM information_schema.columns 
-       WHERE table_name = 'tasks' AND column_name IN ('created_by', 'creator_id')`
+       WHERE table_name = 'tasks' AND column_name IN ('created_by', 'creator_id', 'organization_id')`
     );
     const hasCreatedBy = columnCheck.rows.some((r: any) => r.column_name === 'created_by');
     const hasCreatorId = columnCheck.rows.some((r: any) => r.column_name === 'creator_id');
+    const hasOrganizationId = columnCheck.rows.some((r: any) => r.column_name === 'organization_id');
     
-    const creatorColumn = hasCreatedBy ? 'created_by' : (hasCreatorId ? 'creator_id' : 'created_by');
+    // Build INSERT statement with both columns if they exist
+    let insertColumns = ['title', 'description', 'task_type', 'priority'];
+    let insertValues = [title, description, task_type || 'one_time', priority || 'medium'];
+    let paramIndex = 5;
     
-    taskResult = await client.query(
-      `INSERT INTO tasks (
-        title, description, task_type, priority, ${creatorColumn},
-        start_date, target_date, due_date,
-        recurrence_type, recurrence_interval,
-        auto_escalate, escalation_rules
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-      RETURNING *`,
-      [
-        title,
-        description,
-        task_type || 'one_time',
-        priority || 'medium',
-        userId,
-        start_date || null,
-        target_date || null,
-        due_date,
-        recurrence_type || null,
-        recurrence_interval || 1,
-        auto_escalate || false,
-        escalation_rules ? JSON.stringify(escalation_rules) : null,
-      ]
+    // Add creator column(s) - set both if both exist
+    if (hasCreatedBy && hasCreatorId) {
+      // Both columns exist - set both to userId
+      insertColumns.push('created_by', 'creator_id');
+      insertValues.push(userId, userId);
+      paramIndex += 2;
+    } else if (hasCreatedBy) {
+      insertColumns.push('created_by');
+      insertValues.push(userId);
+      paramIndex += 1;
+    } else if (hasCreatorId) {
+      insertColumns.push('creator_id');
+      insertValues.push(userId);
+      paramIndex += 1;
+    } else {
+      // Default to created_by if neither exists (shouldn't happen, but safety)
+      insertColumns.push('created_by');
+      insertValues.push(userId);
+      paramIndex += 1;
+    }
+    
+    // Add organization_id if column exists
+    if (hasOrganizationId) {
+      insertColumns.push('organization_id');
+      insertValues.push(organizationId);
+      paramIndex += 1;
+    }
+    
+    // Add remaining columns
+    insertColumns.push('start_date', 'target_date', 'due_date', 'recurrence_type', 'recurrence_interval', 'auto_escalate', 'escalation_rules');
+    insertValues.push(
+      start_date || null,
+      target_date || null,
+      due_date,
+      recurrence_type || null,
+      recurrence_interval || 1,
+      auto_escalate || false,
+      escalation_rules ? JSON.stringify(escalation_rules) : null
+    );
+    
+    // Build parameterized query
+    const placeholders = insertValues.map((_, i) => `$${i + 1}`).join(', ');
+    
+    const taskResult = await client.query(
+      `INSERT INTO tasks (${insertColumns.join(', ')})
+       VALUES (${placeholders})
+       RETURNING *`,
+      insertValues
     );
 
     const task = taskResult.rows[0];
@@ -275,13 +339,20 @@ export const createTask = async (req: AuthRequest, res: Response) => {
 
     // Auto-create task group conversation
     const conversationResult = await client.query(
-      `INSERT INTO conversations (name, is_group, is_task_group, task_id, created_by)
-       VALUES ($1, TRUE, TRUE, $2, $3)
+      `INSERT INTO conversations (id, type, name, is_group, is_task_group, task_id, created_by)
+       VALUES (gen_random_uuid(), 'group', $1, TRUE, TRUE, $2, $3)
        RETURNING *`,
       [`Task: ${title}`, task.id, userId]
     );
 
     const conversation = conversationResult.rows[0];
+
+    // Get creator's name for the welcome message
+    const creatorResult = await client.query(
+      `SELECT name FROM users WHERE id = $1`,
+      [userId]
+    );
+    const creatorName = creatorResult.rows[0]?.name || 'Admin';
 
     // Add only creator (admin) to conversation initially
     // Assignees will be added only when they accept the task
@@ -293,10 +364,32 @@ export const createTask = async (req: AuthRequest, res: Response) => {
     );
 
     // Create auto-generated message in task group
+    // Check which columns exist in messages table
+    const messageColumnCheck = await client.query(
+      `SELECT column_name FROM information_schema.columns 
+       WHERE table_name = 'messages' AND column_name = 'sender_organization_id'`
+    );
+    const hasSenderOrgId = messageColumnCheck.rows.some((r: any) => r.column_name === 'sender_organization_id');
+    
+    // Build INSERT statement - use conversation_id (new schema), not group_id (old schema)
+    // The conversation_id is sufficient for task group messages
+    // Don't set group_id as it references the old 'groups' table, not 'conversations'
+    let messageColumns = ['conversation_id', 'sender_id', 'content', 'message_type'];
+    let messageValues: any[] = [conversation.id, userId, `Task group auto-created by ${creatorName}`, 'text'];
+    
+    // Add sender_organization_id if column exists
+    if (hasSenderOrgId && organizationId) {
+      messageColumns.push('sender_organization_id');
+      messageValues.push(organizationId);
+    }
+    
+    // Build parameterized query
+    const messagePlaceholders = messageValues.map((_, i) => `$${i + 1}`).join(', ');
+    
     await client.query(
-      `INSERT INTO messages (conversation_id, sender_id, content, message_type)
-       VALUES ($1, $2, $3, 'text')`,
-      [conversation.id, userId, `Task group auto-created by ${req.user?.name || 'Admin'}`]
+      `INSERT INTO messages (${messageColumns.join(', ')})
+       VALUES (${messagePlaceholders})`,
+      messageValues
     );
 
     await client.query('COMMIT');

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -30,9 +30,19 @@ const ProfileScreen = ({ navigation }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState(user?.name || '');
-  const [about, setAbout] = useState(user?.about || '');
-  const [contactNumber, setContactNumber] = useState(user?.contact_number || user?.phone || '');
-  const [localPhoto, setLocalPhoto] = useState(user?.profile_photo || null);
+  const [about, setAbout] = useState(user?.about || user?.bio || '');
+  const [contactNumber, setContactNumber] = useState(user?.contact_number || user?.phone || user?.mobile || '');
+  const [localPhoto, setLocalPhoto] = useState(user?.profile_photo || user?.profilePhotoUrl || null);
+
+  // Update local state when user changes (but only if not editing)
+  useEffect(() => {
+    if (!isEditing && user) {
+      setName(user?.name || '');
+      setAbout(user?.about || user?.bio || '');
+      setContactNumber(user?.contact_number || user?.phone || user?.mobile || '');
+      setLocalPhoto(user?.profile_photo || user?.profilePhotoUrl || null);
+    }
+  }, [user, isEditing]);
 
   const initials = useMemo(() => {
     if (!user?.name) return '?';
@@ -49,9 +59,9 @@ const ProfileScreen = ({ navigation }) => {
     if (!isEditing) {
       // Enter edit mode with current values
       setName(user?.name || '');
-      setAbout(user?.about || '');
-      setContactNumber(user?.contact_number || user?.phone || '');
-      setLocalPhoto(user?.profile_photo || null);
+      setAbout(user?.about || user?.bio || '');
+      setContactNumber(user?.contact_number || user?.phone || user?.mobile || '');
+      setLocalPhoto(user?.profile_photo || user?.profilePhotoUrl || null);
     }
     setIsEditing((prev) => !prev);
   };
@@ -148,7 +158,7 @@ const ProfileScreen = ({ navigation }) => {
               placeholderTextColor="rgba(107, 114, 128, 0.7)"
             />
           ) : (
-            <Text style={styles.phoneText}>{user?.contact_number || user?.phone || 'No contact number'}</Text>
+            <Text style={styles.phoneText}>{user?.contact_number || user?.phone || user?.mobile || 'No contact number'}</Text>
           )}
         </View>
 
@@ -167,7 +177,7 @@ const ProfileScreen = ({ navigation }) => {
               />
             ) : (
               <Text style={styles.sectionValue}>
-                {user?.about || 'Hey there! I am using OrgIT.'}
+                {user?.about || user?.bio || 'Hey there! I am using OrgIT.'}
               </Text>
             )}
           </View>
@@ -177,7 +187,7 @@ const ProfileScreen = ({ navigation }) => {
           <Text style={styles.sectionTitle}>Contact</Text>
           <View style={styles.sectionCard}>
             <Text style={styles.sectionLabel}>Contact number</Text>
-            <Text style={styles.sectionValue}>{user?.contact_number || user?.phone || '-'}</Text>
+            <Text style={styles.sectionValue}>{user?.contact_number || user?.phone || user?.mobile || '-'}</Text>
           </View>
         </View>
       </View>

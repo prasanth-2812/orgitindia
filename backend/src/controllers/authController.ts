@@ -391,7 +391,8 @@ export const loginWithPassword = async (req: Request, res: Response) => {
 };
 
 /**
- * Setup user profile
+ * Update user profile (about, contact_number, profile_photo)
+ * Uses profiles table for extended profile data
  */
 export const setupProfile = async (req: Request, res: Response) => {
   try {
@@ -405,50 +406,59 @@ export const setupProfile = async (req: Request, res: Response) => {
 
     const { name, profilePhotoUrl, bio, about, contact_number, profile_photo } = req.body;
 
-    if (!name || name.trim().length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'Name is required',
+    // Start transaction
+    await query('BEGIN');
+
+    try {
+      // Optionally update name in users table
+      if (name && name.trim().length > 0) {
+        await query(
+          'UPDATE users SET name = $1, updated_at = NOW() WHERE id = $2',
+          [name.trim(), userId]
+        );
+      }
+
+      // Use profile_photo if provided, otherwise profilePhotoUrl
+      const photoUrl = profile_photo || profilePhotoUrl || null;
+      // Use about if provided, otherwise bio
+      const userBio = about || bio || null;
+
+      // Upsert into profiles table
+      const profileResult = await query(
+        `INSERT INTO profiles (user_id, about, contact_number, profile_photo, updated_at)
+         VALUES ($1, $2, $3, $4, NOW())
+         ON CONFLICT (user_id) DO UPDATE
+         SET about = COALESCE($2, profiles.about),
+             contact_number = COALESCE($3, profiles.contact_number),
+             profile_photo = COALESCE($4, profiles.profile_photo),
+             updated_at = NOW()
+         RETURNING about, contact_number, profile_photo`,
+        [userId, userBio || null, contact_number || null, photoUrl || null]
+      );
+
+      // Commit transaction
+      await query('COMMIT');
+
+      const profile = profileResult.rows[0] || {};
+
+      res.json({
+        success: true,
+        profile: {
+          about: profile.about || null,
+          contact_number: profile.contact_number || null,
+          profile_photo: profile.profile_photo || null,
+        },
       });
+    } catch (error: any) {
+      // Rollback transaction on error
+      await query('ROLLBACK');
+      throw error;
     }
-
-    // Use profile_photo if provided, otherwise profilePhotoUrl
-    const photoUrl = profile_photo || profilePhotoUrl || null;
-    // Use about if provided, otherwise bio
-    const userBio = about || bio || null;
-
-    const result = await query(
-      `UPDATE users 
-       SET name = $1, profile_photo_url = $2, bio = $3, updated_at = NOW()
-       WHERE id = $4
-       RETURNING id, mobile, name, role, status, profile_photo_url, bio, created_at, updated_at`,
-      [name, photoUrl, userBio, userId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: 'User not found',
-      });
-    }
-
-    const user = result.rows[0];
-
-    res.json({
-      success: true,
-      data: user,
-      profile: {
-        name: user.name,
-        about: user.bio,
-        contact_number: user.mobile,
-        profile_photo: user.profile_photo_url,
-      },
-    });
   } catch (error: any) {
-    console.error('Setup profile error:', error);
+    console.error('Update profile error:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to setup profile',
+      error: error.message || 'Failed to update profile',
     });
   }
 };
@@ -583,7 +593,8 @@ export const register = async (req: Request, res: Response) => {
 };
 
 /**
- * Get user by ID
+ * Get user by ID (for viewing recipient details)
+ * Joins with profiles table to get extended profile data
  */
 export const getUserById = async (req: Request, res: Response) => {
   try {
@@ -598,8 +609,18 @@ export const getUserById = async (req: Request, res: Response) => {
     }
 
     const result = await query(
-      `SELECT id, mobile, name, role, status, profile_photo_url, bio, created_at
-       FROM users WHERE id = $1 AND status = 'active'`,
+      `SELECT 
+        u.id,
+        u.name,
+        u.mobile,
+        u.phone,
+        p.about,
+        p.contact_number,
+        p.profile_photo,
+        COALESCE(u.profile_photo_url, p.profile_photo) as profile_photo_url
+       FROM users u
+       LEFT JOIN profiles p ON p.user_id = u.id
+       WHERE u.id = $1 AND (u.status = 'active' OR u.status IS NULL)`,
       [targetUserId]
     );
 
@@ -616,12 +637,11 @@ export const getUserById = async (req: Request, res: Response) => {
       success: true,
       user: {
         id: user.id,
-        mobile: user.mobile,
         name: user.name,
-        role: user.role,
-        status: user.status,
-        profilePhotoUrl: user.profile_photo_url,
-        bio: user.bio,
+        phone: user.phone || user.mobile,
+        about: user.about || 'Hey there! I am using OrgIT.',
+        contact_number: user.contact_number || user.phone || user.mobile,
+        profile_photo: user.profile_photo || user.profile_photo_url || null,
       },
     });
   } catch (error: any) {
@@ -676,7 +696,7 @@ export const syncUserContacts = async (req: Request, res: Response) => {
 };
 
 /**
- * Get current user profile
+ * Get current user profile (with profile data from profiles table)
  */
 export const getCurrentUser = async (req: Request, res: Response) => {
   try {
@@ -688,7 +708,25 @@ export const getCurrentUser = async (req: Request, res: Response) => {
       });
     }
 
-    const result = await query('SELECT * FROM users WHERE id = $1', [userId]);
+    const result = await query(
+      `SELECT 
+        u.id,
+        u.name,
+        u.mobile,
+        u.phone,
+        u.role,
+        u.status,
+        u.created_at,
+        p.about,
+        p.contact_number,
+        p.profile_photo,
+        COALESCE(u.profile_photo_url, p.profile_photo) as profile_photo_url,
+        u.bio
+       FROM users u
+       LEFT JOIN profiles p ON p.user_id = u.id
+       WHERE u.id = $1`,
+      [userId]
+    );
 
     if (result.rows.length === 0) {
       return res.status(404).json({
@@ -712,11 +750,15 @@ export const getCurrentUser = async (req: Request, res: Response) => {
       data: {
         id: userRow.id,
         mobile: userRow.mobile,
+        phone: userRow.phone || userRow.mobile,
         name: userRow.name,
         role: userRow.role,
         status: userRow.status,
-        profilePhotoUrl: userRow.profile_photo_url || undefined,
+        profilePhotoUrl: userRow.profile_photo || userRow.profile_photo_url || undefined,
+        profile_photo: userRow.profile_photo || userRow.profile_photo_url || null,
         bio: userRow.bio || undefined,
+        about: userRow.about || userRow.bio || undefined,
+        contact_number: userRow.contact_number || userRow.phone || userRow.mobile || undefined,
         organizationId: organizationId || undefined,
       },
     });
