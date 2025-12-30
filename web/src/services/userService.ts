@@ -13,5 +13,6 @@ export const userService = {
     api.get('/super-admin/users', { params: filters }),
   getById: (id: string) => api.get(`/super-admin/users/${id}`),
   delete: (id: string) => api.delete(`/super-admin/users/${id}`),
+  updateRole: (userId: string, role: string) => api.put(`/super-admin/users/${userId}/role`, { role }),
 };
 

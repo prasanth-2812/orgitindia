@@ -44,7 +44,7 @@ const io = new Server(httpServer, {
         /^http:\/\/.*/,
         /^https:\/\/.*/,
       ];
-      
+
       // Check if origin matches any allowed pattern
       if (!origin || allowedOrigins.some(allowed => {
         if (typeof allowed === 'string') {
@@ -101,6 +101,9 @@ app.use(cors({
 // Static files for PDF previews
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
+import morgan from 'morgan';
+app.use(morgan('dev'));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -129,6 +132,8 @@ app.use('/api/super-admin/tasks', taskMonitoringRoutes);
 app.use('/api/super-admin/dashboard', superAdminDashboardRoutes);
 app.use('/api/super-admin/users', userRoutes);
 app.use('/api/super-admin/settings', platformSettingsRoutes);
+import adminRoutes from './routes/adminRoutes';
+app.use('/api/admin', adminRoutes);
 
 // Compliance Routes (accessible by both Super Admin and Admin)
 app.use('/api/compliance', complianceRoutes);

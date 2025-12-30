@@ -4,8 +4,9 @@ import { query } from '../config/database';
 
 /**
  * Middleware to allow both Admin and Super Admin roles
+ * Fetches role from database to ensure it's current (not from stale JWT)
  */
-export const isAdminOrSuperAdmin = (
+export const isAdminOrSuperAdmin = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -17,14 +18,37 @@ export const isAdminOrSuperAdmin = (
     });
   }
 
-  if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
-    return res.status(403).json({
+  try {
+    // Fetch current role from database to ensure it's up-to-date
+    const result = await query('SELECT role FROM users WHERE id = $1', [req.user.userId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found',
+      });
+    }
+
+    const userRole = result.rows[0].role;
+
+    if (userRole !== 'admin' && userRole !== 'super_admin') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden: Admin or Super Admin access required',
+      });
+    }
+
+    // Update req.user.role with current database value
+    req.user.role = userRole;
+
+    next();
+  } catch (error) {
+    console.error('Admin role check error:', error);
+    return res.status(500).json({
       success: false,
-      error: 'Forbidden: Admin or Super Admin access required',
+      error: 'Internal server error',
     });
   }
-
-  next();
 };
 
 /**
@@ -49,23 +73,32 @@ export const requireOrganization = async (
 
   // Admin must have organization_id
   if (req.user.role === 'admin') {
-    // Get user's organization from user_organizations table
-    const orgResult = await query(
-      `SELECT organization_id FROM user_organizations 
-       WHERE user_id = $1 
-       LIMIT 1`,
-      [req.user.userId]
-    );
+    try {
+      // Get user's organization from user_organizations table
+      const orgResult = await query(
+        `SELECT organization_id FROM user_organizations 
+         WHERE user_id = $1 
+         LIMIT 1`,
+        [req.user.userId]
+      );
 
-    if (orgResult.rows.length === 0) {
-      return res.status(403).json({
+      if (orgResult.rows.length === 0) {
+        console.error(`Admin user ${req.user.userId} is not associated with any organization`);
+        return res.status(403).json({
+          success: false,
+          error: 'Forbidden: User is not associated with any organization',
+        });
+      }
+
+      // Attach organization_id to request
+      req.user.organizationId = orgResult.rows[0].organization_id;
+    } catch (error) {
+      console.error('Error checking user organization:', error);
+      return res.status(500).json({
         success: false,
-        error: 'Forbidden: User is not associated with any organization',
+        error: 'Internal server error',
       });
     }
-
-    // Attach organization_id to request
-    req.user.organizationId = orgResult.rows[0].organization_id;
   }
 
   next();

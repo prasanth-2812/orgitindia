@@ -89,6 +89,65 @@ export async function deleteUser(req: AuthRequest, res: Response) {
 }
 
 /**
+ * Update user role (super admin only)
+ */
+export async function updateUserRole(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    if (!role) {
+      return res.status(400).json({
+        success: false,
+        error: 'Role is required',
+      });
+    }
+
+    if (!['admin', 'employee', 'super_admin'].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid role. Must be one of: admin, employee, super_admin',
+      });
+    }
+
+    // Prevent changing own role
+    if (id === req.user?.userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot change your own role',
+      });
+    }
+
+    const { query } = await import('../config/database');
+    const result = await query(
+      'UPDATE users SET role = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, name, role',
+      [role, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        message: 'Role updated successfully',
+        user: result.rows[0],
+      },
+    });
+  } catch (error: any) {
+    console.error('Error updating user role:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to update user role',
+    });
+  }
+}
+
+/**
  * Search users for chat (any authenticated user)
  */
 export async function searchUsersForChat(req: AuthRequest, res: Response) {

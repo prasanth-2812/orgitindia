@@ -1,5 +1,7 @@
 import React from 'react';
 import { useDocumentBuilder, TableBlock, TextBlock, KeyValueBlock, SignatureBlock, AmountSummaryBlock } from '../DocumentBuilderProvider';
+import { useAuth } from '../../../context/AuthContext';
+import { organizationService } from '../../../services/organizationService';
 
 const TextFiller: React.FC<{ section: TextBlock }> = ({ section }) => {
     // In a real implementation, we would extract {{data}} variables and show inputs.
@@ -295,14 +297,65 @@ const DocumentDataFiller: React.FC = () => {
 const HeaderFiller: React.FC = () => {
     const { state, dispatch } = useDocumentBuilder();
     const header = state.header;
+    const { user } = useAuth();
+    const [isLoadingOrg, setIsLoadingOrg] = React.useState(false);
 
     const updateHeader = (payload: Partial<typeof header>) => {
         dispatch({ type: 'UPDATE_HEADER', payload });
     };
 
+    const loadFromEntityMaster = async () => {
+        if (!user?.organizationId) {
+            alert('Organization not found. Please ensure you are associated with an organization.');
+            return;
+        }
+
+        setIsLoadingOrg(true);
+        try {
+            const response = user?.role === 'admin' 
+                ? await organizationService.getMyOrganization()
+                : await organizationService.getById(user.organizationId);
+            const orgData = response.data.data;
+
+            const updates: any = {};
+            if (orgData.name) updates.orgName = orgData.name;
+            if (orgData.address) updates.orgAddress = orgData.address;
+            if (orgData.gst) updates.orgGstin = orgData.gst;
+            if (orgData.email) updates.orgEmail = orgData.email;
+            if (orgData.mobile) updates.orgMobile = orgData.mobile;
+            
+            if (orgData.logoUrl && header.showLogo) {
+                let logoUrl = orgData.logoUrl;
+                if (logoUrl.startsWith('/')) {
+                    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+                    logoUrl = `${apiUrl}${logoUrl}`;
+                }
+                updates.orgLogoUrl = logoUrl;
+            }
+
+            dispatch({ type: 'UPDATE_HEADER', payload: updates });
+        } catch (error: any) {
+            console.error('Error loading organization data:', error);
+            alert(`Failed to load Entity Master Data: ${error.response?.data?.error || error.message}`);
+        } finally {
+            setIsLoadingOrg(false);
+        }
+    };
+
     return (
         <div className="mb-6 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-            <h3 className="text-sm font-bold text-gray-800 mb-4 border-b pb-2">Business Details</h3>
+            <div className="flex items-center justify-between mb-4 border-b pb-2">
+                <h3 className="text-sm font-bold text-gray-800">Business Details</h3>
+                <button
+                    onClick={loadFromEntityMaster}
+                    disabled={isLoadingOrg}
+                    className="text-xs px-2 py-1 text-primary hover:text-primary-700 hover:bg-primary/10 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                    title="Load from Entity Master Data"
+                >
+                    <span className="material-symbols-outlined text-sm">refresh</span>
+                    <span>Auto-fill</span>
+                </button>
+            </div>
 
             <div className="space-y-4">
                 <div>

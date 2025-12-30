@@ -11,6 +11,10 @@ export const organizationService = {
   getAll: (filters?: OrganizationFilters) =>
     api.get('/super-admin/organizations', { params: filters }),
   getById: (id: string) => api.get(`/super-admin/organizations/${id}`),
+  // Admin endpoints for managing their own organization
+  getMyOrganization: () => api.get('/admin/organization'),
+  updateMyOrganization: (data: any) => api.put('/admin/organization', data),
+  // Super admin endpoints
   create: (data: any) => api.post('/super-admin/organizations', data),
   update: (id: string, data: any) => api.put(`/super-admin/organizations/${id}`, data),
   delete: (id: string) => api.delete(`/super-admin/organizations/${id}`),

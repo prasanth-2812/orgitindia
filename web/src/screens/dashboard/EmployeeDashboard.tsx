@@ -13,6 +13,17 @@ export const EmployeeDashboard: React.FC = () => {
   const [taskView, setTaskView] = useState<TaskView>('self');
   const [expandedDM, setExpandedDM] = useState(false);
   const [expandedCM, setExpandedCM] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  const handleLogout = () => {
+    // Clear tokens and state
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+
+    // Force hard reload to clear any in-memory state and reset auth context
+    window.location.href = '/login';
+  };
 
   const { data: dashboardData, isLoading } = useQuery(
     ['dashboard', taskView],
@@ -74,18 +85,72 @@ export const EmployeeDashboard: React.FC = () => {
     <div className="bg-background-subtle dark:bg-background-dark text-text-main dark:text-white antialiased min-h-screen flex flex-col font-display pb-24">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background-light/95 dark:bg-background-dark-subtle/95 backdrop-blur-sm border-b border-gray-100 dark:border-white/10 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Avatar src={user?.profilePhotoUrl} alt={user?.name || 'User'} size="md" online />
-          </div>
-          <div>
-            <p className="text-xs text-text-muted dark:text-purple-300 font-medium">
-              {getGreeting()},
-            </p>
-            <h2 className="text-text-main dark:text-white text-lg font-bold leading-tight">
-              {user?.name || 'User'}
-            </h2>
-          </div>
+        <div className="relative">
+          <button
+            className="flex items-center gap-3 hover:bg-black/5 dark:hover:bg-white/5 p-2 rounded-lg transition-colors text-left"
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
+          >
+            <div className="relative">
+              <Avatar src={user?.profilePhotoUrl} alt={user?.name || 'User'} size="md" online />
+            </div>
+            <div>
+              <p className="text-xs text-text-muted dark:text-purple-300 font-medium">
+                {getGreeting()},
+              </p>
+              <h2 className="text-text-main dark:text-white text-lg font-bold leading-tight">
+                {user?.name || 'User'}
+              </h2>
+            </div>
+            <span className="material-symbols-outlined text-text-muted dark:text-gray-400">
+              {showProfileMenu ? 'expand_less' : 'expand_more'}
+            </span>
+          </button>
+
+          {/* Profile Menu Popover */}
+          {showProfileMenu && (
+            <>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setShowProfileMenu(false)}
+              />
+              <div className="absolute top-full left-0 mt-2 w-72 bg-white dark:bg-background-dark-subtle rounded-xl shadow-xl border border-gray-100 dark:border-white/10 z-50 overflow-hidden animation-fade-in origin-top-left">
+                <div className="p-4 border-b border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
+                  <p className="text-xs font-semibold text-text-muted dark:text-gray-400 uppercase tracking-wider mb-1">
+                    Signed in as
+                  </p>
+                  <p className="text-sm font-bold text-text-main dark:text-white truncate">
+                    {user?.name}
+                  </p>
+                  <p className="text-xs text-text-muted dark:text-gray-400 mt-0.5">
+                    {user?.mobile}
+                  </p>
+                  <div className="mt-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary capitalize">
+                    {user?.role?.replace('_', ' ')}
+                  </div>
+                </div>
+
+                <div className="p-2">
+                  <button
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      navigate('/profile-setup');
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-text-main dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-gray-400">person</span>
+                    Profile Settings
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors mt-1"
+                  >
+                    <span className="material-symbols-outlined">logout</span>
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
         <button
           className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"

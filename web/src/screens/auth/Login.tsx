@@ -6,17 +6,14 @@ import { z } from 'zod';
 import { TopAppBar, Button } from '../../components/shared';
 import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
-import { COUNTRY_CODES, CountryCode } from '../../constants/countryCodes';
 
 const passwordLoginSchema = z.object({
-  countryCode: z.string().nonempty('Country code is required'),
-  mobile: z.string().regex(/^\d{6,15}$/, 'Mobile number must be between 6 and 15 digits'),
+  mobile: z.string().min(10, 'Mobile number must be at least 10 digits'),
   password: z.string().min(1, 'Password is required'),
 });
 
 const otpLoginSchema = z.object({
-  countryCode: z.string().nonempty('Country code is required'),
-  mobile: z.string().regex(/^\d{6,15}$/, 'Mobile number must be between 6 and 15 digits'),
+  mobile: z.string().min(10, 'Mobile number must be at least 10 digits'),
 });
 
 type PasswordLoginFormData = z.infer<typeof passwordLoginSchema>;
@@ -32,9 +29,14 @@ export const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
-  const [selectedCountry, setSelectedCountry] = useState<CountryCode>(
-    COUNTRY_CODES.find((c) => c.isoCode === 'IN') || COUNTRY_CODES[0]
-  );
+  // Helper function to match Mobile logic
+  const formatPhoneNumber = (phone: string) => {
+    let cleaned = phone.replace(/\D/g, '');
+    if (cleaned.startsWith('91') && cleaned.length === 12) return `+${cleaned}`;
+    if (cleaned.length === 10) return `+91${cleaned}`;
+    if (phone.startsWith('+')) return phone;
+    return cleaned.length === 10 ? `+91${cleaned}` : phone;
+  };
 
   const passwordForm = useForm<PasswordLoginFormData>({
     resolver: zodResolver(passwordLoginSchema),
@@ -49,7 +51,7 @@ export const Login: React.FC = () => {
     setError(null);
 
     try {
-      const fullMobile = `${selectedCountry.dialCode}${data.mobile}`;
+      const fullMobile = formatPhoneNumber(data.mobile);
       const response = await authService.loginWithPassword({
         mobile: fullMobile,
         password: data.password,
@@ -89,14 +91,12 @@ export const Login: React.FC = () => {
     setError(null);
 
     try {
-      const fullMobile = `${selectedCountry.dialCode}${data.mobile}`;
+      const fullMobile = formatPhoneNumber(data.mobile);
       const response = await authService.requestOTP({ mobile: fullMobile });
       if (response.success) {
         navigate('/otp-verification', {
           state: {
             mobile: fullMobile,
-            dialCode: selectedCountry.dialCode,
-            countryName: selectedCountry.name,
             rawMobile: data.mobile,
             isLogin: true, // Flag to indicate this is login, not registration
           },
@@ -148,11 +148,10 @@ export const Login: React.FC = () => {
                 setActiveTab('password');
                 setError(null);
               }}
-              className={`flex-1 py-2.5 px-4 rounded-md text-sm font-semibold transition-all ${
-                activeTab === 'password'
-                  ? 'bg-white dark:bg-slate-700 text-primary shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
+              className={`flex-1 py-2.5 px-4 rounded-md text-sm font-semibold transition-all ${activeTab === 'password'
+                ? 'bg-white dark:bg-slate-700 text-primary shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
             >
               Password
             </button>
@@ -162,11 +161,10 @@ export const Login: React.FC = () => {
                 setActiveTab('otp');
                 setError(null);
               }}
-              className={`flex-1 py-2.5 px-4 rounded-md text-sm font-semibold transition-all ${
-                activeTab === 'otp'
-                  ? 'bg-white dark:bg-slate-700 text-primary shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
+              className={`flex-1 py-2.5 px-4 rounded-md text-sm font-semibold transition-all ${activeTab === 'otp'
+                ? 'bg-white dark:bg-slate-700 text-primary shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
             >
               OTP
             </button>
@@ -181,28 +179,11 @@ export const Login: React.FC = () => {
                 Mobile Number
               </p>
               <div className="flex w-full flex-1 items-stretch rounded-lg shadow-sm">
-                <select
-                  {...passwordForm.register('countryCode')}
-                  value={selectedCountry.dialCode}
-                  onChange={(e) => {
-                    const dialCode = e.target.value;
-                    const found = COUNTRY_CODES.find((c) => c.dialCode === dialCode) || COUNTRY_CODES[0];
-                    setSelectedCountry(found);
-                  }}
-                  className="flex items-center justify-center px-3 border border-r-0 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-l-lg text-slate-900 dark:text-white min-w-[110px] text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                >
-                  {COUNTRY_CODES.map((code) => (
-                    <option key={code.isoCode} value={code.dialCode}>
-                      {code.name} ({code.dialCode})
-                    </option>
-                  ))}
-                </select>
                 <input
                   {...passwordForm.register('mobile')}
-                  className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-r-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary h-14 placeholder:text-slate-400 p-[15px] text-lg font-normal leading-normal tracking-wide"
+                  className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary h-14 placeholder:text-slate-400 p-[15px] text-lg font-normal leading-normal tracking-wide"
                   placeholder="Enter mobile number"
                   type="tel"
-                  maxLength={15}
                 />
               </div>
               {passwordForm.formState.errors.mobile && (
@@ -268,28 +249,11 @@ export const Login: React.FC = () => {
                 Mobile Number
               </p>
               <div className="flex w-full flex-1 items-stretch rounded-lg shadow-sm">
-                <select
-                  {...otpForm.register('countryCode')}
-                  value={selectedCountry.dialCode}
-                  onChange={(e) => {
-                    const dialCode = e.target.value;
-                    const found = COUNTRY_CODES.find((c) => c.dialCode === dialCode) || COUNTRY_CODES[0];
-                    setSelectedCountry(found);
-                  }}
-                  className="flex items-center justify-center px-3 border border-r-0 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-l-lg text-slate-900 dark:text-white min-w-[110px] text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                >
-                  {COUNTRY_CODES.map((code) => (
-                    <option key={code.isoCode} value={code.dialCode}>
-                      {code.name} ({code.dialCode})
-                    </option>
-                  ))}
-                </select>
                 <input
                   {...otpForm.register('mobile')}
-                  className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-r-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary h-14 placeholder:text-slate-400 p-[15px] text-lg font-normal leading-normal tracking-wide"
+                  className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary h-14 placeholder:text-slate-400 p-[15px] text-lg font-normal leading-normal tracking-wide"
                   placeholder="Enter mobile number"
                   type="tel"
-                  maxLength={15}
                 />
               </div>
               {otpForm.formState.errors.mobile && (

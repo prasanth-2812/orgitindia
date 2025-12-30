@@ -44,8 +44,12 @@ export function renderDocumentFromState(state: BuilderState): string {
     const headerHTML = `
     <header style="display: flex; flex-direction: column; align-items: ${itemsAlign}; border-bottom: 2px solid #334155; padding-bottom: 20px; margin-bottom: 30px; text-align: ${textAlign};">
       ${state.header.showLogo ? `
-        <div style="width: 80px; height: 80px; background-color: #f1f5f9; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; color: #94a3b8; font-weight: bold;">
-          Logo
+        <div style="width: 80px; height: 80px; background-color: #f1f5f9; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; overflow: hidden;">
+          ${state.header.orgLogoUrl ? `
+            <img src="${state.header.orgLogoUrl}" alt="Company Logo" style="width: 100%; height: 100%; object-fit: contain;" />
+          ` : `
+            <span style="color: #94a3b8; font-weight: bold; font-size: 12px;">Logo</span>
+          `}
         </div>
       ` : ''}
       ${state.header.orgDetailsVisible ? `

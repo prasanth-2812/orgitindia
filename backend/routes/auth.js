@@ -56,16 +56,21 @@ router.post('/register', async (req, res) => {
     );
 
     res.status(201).json({
-      user: {
-        id: user.id,
-        name: user.name,
-        phone: user.phone,
-        // Default profile info (can be updated later)
-        about: 'Hey there! I am using OrgIT.',
-        contact_number: phone,
-        profile_photo: null,
-      },
-      token,
+      success: true,
+      data: {
+        token,
+        refreshToken: token,
+        user: {
+          id: user.id,
+          name: user.name,
+          role: user.role, // Assuming DB defaults it, or we should fetch it. But for register it's usually 'employee' default.
+          phone: user.phone,
+          // Default profile info (can be updated later)
+          about: 'Hey there! I am using OrgIT.',
+          contact_number: phone,
+          profile_photo: null,
+        }
+      }
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -87,6 +92,7 @@ router.post('/login', async (req, res) => {
       `SELECT 
         u.id, 
         u.name, 
+        u.role,
         u.phone, 
         u.password_hash,
         p.about,
@@ -119,15 +125,20 @@ router.post('/login', async (req, res) => {
     );
 
     res.json({
-      user: {
-        id: user.id,
-        name: user.name,
-        phone: user.phone,
-        about: user.about || 'Hey there! I am using OrgIT.',
-        contact_number: user.contact_number || user.phone,
-        profile_photo: user.profile_photo || null,
-      },
-      token,
+      success: true,
+      data: {
+        token,
+        refreshToken: token, // Assuming same for now as backend doesn't seem to have distinct refresh flow yet
+        user: {
+          id: user.id,
+          name: user.name,
+          role: user.role,
+          phone: user.phone,
+          about: user.about || 'Hey there! I am using OrgIT.',
+          contact_number: user.contact_number || user.phone,
+          profile_photo: user.profile_photo || null,
+        }
+      }
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -142,6 +153,7 @@ router.get('/me', authenticateToken, async (req, res) => {
       `SELECT 
         u.id,
         u.name,
+        u.role,
         u.phone,
         u.created_at,
         p.about,
@@ -164,6 +176,7 @@ router.get('/me', authenticateToken, async (req, res) => {
         id: user.id,
         name: user.name,
         phone: user.phone,
+        role: user.role,
         created_at: user.created_at,
         about: user.about || 'Hey there! I am using OrgIT.',
         contact_number: user.contact_number || user.phone,

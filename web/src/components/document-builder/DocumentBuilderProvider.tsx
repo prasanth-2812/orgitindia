@@ -68,6 +68,7 @@ export interface DocumentHeader {
   orgGstin?: string;
   orgEmail?: string;
   orgMobile?: string;
+  orgLogoUrl?: string; // Logo URL from Entity Master Data
 }
 
 export interface DocumentFooter {

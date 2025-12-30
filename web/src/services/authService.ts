@@ -26,6 +26,12 @@ export interface ProfileSetupRequest {
   bio?: string;
 }
 
+export interface RegisterRequest {
+  name: string;
+  phone: string;
+  password: string;
+}
+
 export interface ContactSyncRequest {
   contacts: Array<{
     name: string;
@@ -36,6 +42,15 @@ export interface ContactSyncRequest {
 export const authService = {
   requestOTP: async (data: RequestOTPRequest) => {
     const response = await api.post('/auth/request-otp', data);
+    return response.data;
+  },
+
+  register: async (data: RegisterRequest) => {
+    const response = await api.post('/auth/register', data);
+    if (response.data.success && response.data.token) {
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
     return response.data;
   },
 

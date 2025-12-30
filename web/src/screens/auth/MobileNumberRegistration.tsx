@@ -5,26 +5,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { TopAppBar, Button } from '../../components/shared';
 import { authService } from '../../services/authService';
-import { COUNTRY_CODES, CountryCode } from '../../constants/countryCodes';
 
-const mobileSchema = z
-  .object({
-    name: z.string().min(2, 'Name must be at least 2 characters'),
-    countryCode: z.string().nonempty('Country code is required'),
-    mobile: z.string().regex(/^\d{6,15}$/, 'Mobile number must be between 6 and 15 digits'),
-    password: z
-      .string()
-      .min(8, 'Password must be at least 8 characters')
-      .regex(/[a-zA-Z]/, 'Password must contain at least one letter')
-      .regex(/[0-9]/, 'Password must contain at least one number')
-      .optional()
-      .or(z.literal('')),
-    confirmPassword: z.string().optional().or(z.literal('')),
-  })
-  .refine((data) => !data.password || data.password === data.confirmPassword, {
-    message: 'Passwords do not match',
-    path: ['confirmPassword'],
-  });
+const mobileSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  mobile: z.string().min(10, 'Mobile number must be at least 10 digits'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+});
 
 type MobileFormData = z.infer<typeof mobileSchema>;
 
@@ -33,7 +19,6 @@ export const MobileNumberRegistration: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const {
     register,
@@ -43,33 +28,46 @@ export const MobileNumberRegistration: React.FC = () => {
     resolver: zodResolver(mobileSchema),
   });
 
-  const [selectedCountry, setSelectedCountry] = useState<CountryCode>(
-    COUNTRY_CODES.find((c) => c.isoCode === 'IN') || COUNTRY_CODES[0]
-  );
+  // Helper function to match Mobile logic
+  const formatPhoneNumber = (phone: string) => {
+    let cleaned = phone.replace(/\D/g, '');
+    if (cleaned.startsWith('91') && cleaned.length === 12) return `+${cleaned}`;
+    if (cleaned.length === 10) return `+91${cleaned}`;
+    if (phone.startsWith('+')) return phone;
+    return cleaned.length === 10 ? `+91${cleaned}` : phone;
+  };
 
   const onSubmit = async (data: MobileFormData) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const fullMobile = `${selectedCountry.dialCode}${data.mobile}`;
-      const response = await authService.requestOTP({ mobile: fullMobile });
+      const fullMobile = formatPhoneNumber(data.mobile);
+      if (!data.password) {
+        setError("Password is required");
+        setIsLoading(false);
+        return;
+      }
+
+      // Use register directly like Mobile
+      const response = await authService.register({
+        name: data.name,
+        phone: fullMobile,
+        password: data.password
+      });
+
       if (response.success) {
-        navigate('/otp-verification', {
-          state: {
-            mobile: fullMobile,
-            dialCode: selectedCountry.dialCode,
-            countryName: selectedCountry.name,
-            rawMobile: data.mobile,
-            name: data.name,
-            password: data.password || undefined, // Pass password if provided
-          },
-        });
+        // Registration successful, token is set in authService.register
+        // Navigate to dashboard or whatever is next
+        // Mobile says: "Navigation will be handled by the navigator" which usually means going to Main/Home
+        // For Web, let's go to Dashboard
+        navigate('/dashboard');
       } else {
-        setError(response.error || 'Failed to send OTP');
+        setError(response.error || 'Registration failed');
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to send OTP. Please try again.');
+      console.error('Register error:', err);
+      setError(err.response?.data?.error || err.message || 'Failed to create account');
     } finally {
       setIsLoading(false);
     }
@@ -95,12 +93,12 @@ export const MobileNumberRegistration: React.FC = () => {
 
         {/* Headline */}
         <h1 className="text-slate-900 dark:text-white tracking-tight text-[32px] font-bold leading-tight px-6 text-center pt-4">
-          Let's get you started
+          Create Account
         </h1>
 
         {/* Body Text */}
         <p className="text-slate-500 dark:text-slate-400 text-base font-normal leading-normal py-3 px-6 text-center">
-          Enter your mobile number and set a password to get started.
+          Sign up to get started
         </p>
 
         {/* Form */}
@@ -126,37 +124,15 @@ export const MobileNumberRegistration: React.FC = () => {
               Mobile Number
             </p>
             <div className="flex w-full flex-1 items-stretch rounded-lg shadow-sm">
-              {/* Country Code Selector */}
-              <select
-                {...register('countryCode')}
-                value={selectedCountry.dialCode}
-                onChange={(e) => {
-                  const dialCode = e.target.value;
-                  const found = COUNTRY_CODES.find((c) => c.dialCode === dialCode) || COUNTRY_CODES[0];
-                  setSelectedCountry(found);
-                }}
-                className="flex items-center justify-center px-3 border border-r-0 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-l-lg text-slate-900 dark:text-white min-w-[110px] text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              >
-                {COUNTRY_CODES.map((code) => (
-                  <option key={code.isoCode} value={code.dialCode}>
-                    {code.name} ({code.dialCode})
-                  </option>
-                ))}
-              </select>
-              {/* Input Field */}
               <input
                 {...register('mobile')}
-                className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-r-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary h-14 placeholder:text-slate-400 p-[15px] text-lg font-normal leading-normal tracking-wide"
+                className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary h-14 placeholder:text-slate-400 p-[15px] text-lg font-normal leading-normal tracking-wide"
                 placeholder="Enter mobile number"
                 type="tel"
-                maxLength={15}
               />
             </div>
             {errors.mobile && (
               <p className="text-red-500 text-sm mt-1">{errors.mobile.message}</p>
-            )}
-            {errors.countryCode && (
-              <p className="text-red-500 text-sm mt-1">{errors.countryCode.message}</p>
             )}
             {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
           </label>
@@ -164,14 +140,14 @@ export const MobileNumberRegistration: React.FC = () => {
           {/* Password Field */}
           <label className="flex flex-col min-w-40 flex-1">
             <p className="text-slate-900 dark:text-white text-base font-medium leading-normal pb-2">
-              Password <span className="text-slate-500 text-sm font-normal">(Optional)</span>
+              Password
             </p>
             <div className="relative">
               <input
                 {...register('password')}
                 type={showPassword ? 'text' : 'password'}
                 className="form-input flex w-full resize-none overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary h-14 placeholder:text-slate-400 p-[15px] pr-12 text-lg font-normal leading-normal tracking-wide"
-                placeholder="Enter password (min 8 chars, 1 letter, 1 number)"
+                placeholder="Enter password"
               />
               <button
                 type="button"
@@ -188,37 +164,12 @@ export const MobileNumberRegistration: React.FC = () => {
             )}
           </label>
 
-          {/* Confirm Password Field */}
-          <label className="flex flex-col min-w-40 flex-1">
-            <p className="text-slate-900 dark:text-white text-base font-medium leading-normal pb-2">
-              Confirm Password
-            </p>
-            <div className="relative">
-              <input
-                {...register('confirmPassword')}
-                type={showConfirmPassword ? 'text' : 'password'}
-                className="form-input flex w-full resize-none overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary h-14 placeholder:text-slate-400 p-[15px] pr-12 text-lg font-normal leading-normal tracking-wide"
-                placeholder="Confirm your password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-              >
-                <span className="material-symbols-outlined">
-                  {showConfirmPassword ? 'visibility_off' : 'visibility'}
-                </span>
-              </button>
-            </div>
-            {errors.confirmPassword && (
-              <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>
-            )}
-          </label>
+          {/* Confirm Password Field REMOVED */}
 
           {/* CTA Button */}
           <div className="px-0 pb-4 w-full mt-2">
             <Button type="submit" fullWidth disabled={isLoading}>
-              {isLoading ? 'Sending...' : 'Get OTP'}
+              {isLoading ? 'Registering...' : 'Register'}
             </Button>
           </div>
         </form>

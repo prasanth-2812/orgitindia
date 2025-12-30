@@ -25,8 +25,6 @@ import { OrganizationDetail } from './screens/super-admin/organizations/Organiza
 import { OrganizationForm } from './screens/super-admin/organizations/OrganizationForm';
 import { DocumentTemplateList } from './screens/super-admin/document-templates/DocumentTemplateList';
 import { DocumentTemplateForm } from './screens/super-admin/document-templates/DocumentTemplateForm';
-import { DocumentInstanceList } from './screens/super-admin/document-instances/DocumentInstanceList';
-import { DocumentInstanceViewer } from './screens/super-admin/document-instances/DocumentInstanceViewer';
 import { ComplianceList } from './screens/super-admin/compliance/ComplianceList';
 import { ComplianceForm } from './screens/super-admin/compliance/ComplianceForm';
 import { TaskMonitoring } from './screens/super-admin/tasks/TaskMonitoring';
@@ -305,22 +303,6 @@ function App() {
               element={
                 <SuperAdminProtectedRoute>
                   <DocumentTemplateForm />
-                </SuperAdminProtectedRoute>
-              }
-            />
-            <Route
-              path="/super-admin/document-instances"
-              element={
-                <SuperAdminProtectedRoute>
-                  <DocumentInstanceList />
-                </SuperAdminProtectedRoute>
-              }
-            />
-            <Route
-              path="/super-admin/document-instances/:id"
-              element={
-                <SuperAdminProtectedRoute>
-                  <DocumentInstanceViewer />
                 </SuperAdminProtectedRoute>
               }
             />

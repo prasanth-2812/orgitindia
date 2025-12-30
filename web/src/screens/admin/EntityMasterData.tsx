@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import { organizationService } from '../../services/organizationService';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../services/api';
 
 export const EntityMasterData: React.FC = () => {
   const navigate = useNavigate();
@@ -17,7 +18,6 @@ export const EntityMasterData: React.FC = () => {
     gst: '',
     pan: '',
     cin: '',
-    accountingYearStart: '',
     logoUrl: '',
   });
 
@@ -26,7 +26,10 @@ export const EntityMasterData: React.FC = () => {
     ['admin-organization'],
     async () => {
       if (!user?.organizationId) return null;
-      const response = await organizationService.getById(user.organizationId);
+      // Use admin endpoint if user is admin, otherwise use super-admin endpoint
+      const response = user?.role === 'admin' 
+        ? await organizationService.getMyOrganization()
+        : await organizationService.getById(user.organizationId);
       return response.data.data;
     },
     { enabled: !!user?.organizationId }
@@ -42,14 +45,18 @@ export const EntityMasterData: React.FC = () => {
         gst: orgData.gst || '',
         pan: orgData.pan || '',
         cin: orgData.cin || '',
-        accountingYearStart: orgData.accountingYearStart || '',
         logoUrl: orgData.logoUrl || '',
       });
     }
   }, [orgData]);
 
   const updateMutation = useMutation(
-    (data: any) => organizationService.update(user?.organizationId!, data),
+    (data: any) => {
+      // Use admin endpoint if user is admin, otherwise use super-admin endpoint
+      return user?.role === 'admin'
+        ? organizationService.updateMyOrganization(data)
+        : organizationService.update(user?.organizationId!, data);
+    },
     {
       onSuccess: () => {
         queryClient.invalidateQueries('admin-organization');
@@ -66,16 +73,68 @@ export const EntityMasterData: React.FC = () => {
     updateMutation.mutate(formData);
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleLogoClick = () => {
+    if (!isUploadingLogo && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // TODO: Implement file upload to backend
-      // For now, just update the state
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({ ...formData, logoUrl: reader.result as string });
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please upload a valid image file (JPEG, PNG, GIF, WEBP, or SVG)');
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    const maxSize = 2 * 1024 * 1024; // 2MB
+    if (file.size > maxSize) {
+      alert('File size must be less than 2MB');
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    try {
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', file);
+
+      // Use the api service which handles authentication automatically
+      const response = await api.post('/messages/upload/image', uploadFormData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const result = response.data;
+
+      if (result.success && result.data?.url) {
+        // Construct full URL if it's a relative path
+        let imageUrl = result.data.url;
+        if (imageUrl.startsWith('/')) {
+          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+          imageUrl = `${apiUrl}${imageUrl}`;
+        }
+        setFormData(prev => ({ ...prev, logoUrl: imageUrl }));
+        alert('Logo uploaded successfully!');
+      } else {
+        console.error('Unexpected response format:', result);
+        throw new Error(result.error || 'Failed to upload logo - invalid response');
+      }
+    } catch (error: any) {
+      console.error('Logo upload error:', error);
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Please try again';
+      alert(`Error uploading logo: ${errorMessage}`);
+    } finally {
+      setIsUploadingLogo(false);
+      // Reset input so same file can be selected again
+      e.target.value = '';
     }
   };
 
@@ -130,20 +189,38 @@ export const EntityMasterData: React.FC = () => {
               <div className="flex flex-col md:flex-row gap-8">
                 <div className="w-full md:w-1/3 flex flex-col gap-2">
                   <label className="block text-sm font-medium text-slate-700">Company Logo</label>
-                  <div className="flex-1 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 hover:bg-slate-100 hover:border-primary/50 transition-all cursor-pointer flex flex-col items-center justify-center p-6 text-center min-h-[220px] group relative overflow-hidden">
+                  <div 
+                    onClick={handleLogoClick}
+                    className="flex-1 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 hover:bg-slate-100 hover:border-primary/50 transition-all cursor-pointer flex flex-col items-center justify-center p-6 text-center min-h-[220px] group relative overflow-hidden"
+                  >
                     <input
+                      ref={fileInputRef}
                       type="file"
                       accept="image/*"
                       onChange={handleLogoUpload}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      disabled={isUploadingLogo}
+                      className="hidden"
                     />
-                    <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    {formData.logoUrl ? (
-                      <img
-                        src={formData.logoUrl}
-                        alt="Company Logo"
-                        className="w-full h-full object-contain rounded-lg"
-                      />
+                    <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                    {isUploadingLogo ? (
+                      <div className="flex flex-col items-center justify-center relative z-10">
+                        <div className="size-14 rounded-full bg-white border border-slate-200 flex items-center justify-center mb-3 shadow-sm">
+                          <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                        </div>
+                        <p className="text-sm font-bold text-slate-900">Uploading...</p>
+                        <p className="text-xs text-slate-500 mt-1">Please wait</p>
+                      </div>
+                    ) : formData.logoUrl ? (
+                      <div className="relative w-full h-full group/logo">
+                        <img
+                          src={formData.logoUrl}
+                          alt="Company Logo"
+                          className="w-full h-full object-contain rounded-lg"
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/logo:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                          <span className="text-white text-sm font-medium">Click to change</span>
+                        </div>
+                      </div>
                     ) : (
                       <>
                         <div className="size-14 rounded-full bg-white border border-slate-200 flex items-center justify-center mb-3 shadow-sm group-hover:scale-110 group-hover:border-primary/30 transition-all relative z-10">
@@ -276,36 +353,6 @@ export const EntityMasterData: React.FC = () => {
               </div>
             </div>
 
-            {/* Configuration */}
-            <div className="p-6 md:p-8">
-              <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-2xl">settings_applications</span>
-                Configuration
-              </h2>
-              <div className="max-w-md">
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Current Accounting Year</label>
-                <div className="relative">
-                  <select
-                    value={formData.accountingYearStart}
-                    onChange={(e) => setFormData({ ...formData, accountingYearStart: e.target.value })}
-                    className="w-full rounded-lg border-slate-200 bg-slate-50/30 text-slate-900 text-sm focus:border-primary focus:ring-primary py-2.5 pl-3 pr-10 appearance-none cursor-pointer hover:bg-slate-50 transition-colors"
-                  >
-                    <option value="">Select accounting year</option>
-                    <option value="2024-04-01">April 2024 - March 2025</option>
-                    <option value="2023-04-01">April 2023 - March 2024</option>
-                    <option value="2022-04-01">April 2022 - March 2023</option>
-                    <option value="2021-04-01">April 2021 - March 2022</option>
-                  </select>
-                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none text-xl">
-                    expand_more
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500 mt-2 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-sm">info</span>
-                  This setting defines the default fiscal year for all financial reports.
-                </p>
-              </div>
-            </div>
           </form>
         </div>
       </main>

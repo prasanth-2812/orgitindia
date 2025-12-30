@@ -58,6 +58,96 @@ export async function getOrganizationById(req: AuthRequest, res: Response) {
 }
 
 /**
+ * Get admin's own organization
+ */
+export async function getAdminOrganization(req: AuthRequest, res: Response) {
+  try {
+    if (!req.user?.organizationId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden: You are not associated with any organization',
+      });
+    }
+
+    const organization = await organizationService.getOrganizationById(req.user.organizationId);
+
+    if (!organization) {
+      return res.status(404).json({
+        success: false,
+        error: 'Organization not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: organization,
+    });
+  } catch (error: any) {
+    console.error('Error getting admin organization:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to get organization',
+    });
+  }
+}
+
+/**
+ * Update admin's own organization
+ */
+export async function updateAdminOrganization(req: AuthRequest, res: Response) {
+  try {
+    if (!req.user?.organizationId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden: You are not associated with any organization',
+      });
+    }
+
+    const {
+      name,
+      logoUrl,
+      address,
+      email,
+      mobile,
+      gst,
+      pan,
+      cin,
+      accountingYearStart,
+    } = req.body;
+
+    const organization = await organizationService.updateOrganization(req.user.organizationId, {
+      name,
+      logoUrl,
+      address,
+      email,
+      mobile,
+      gst,
+      pan,
+      cin,
+      accountingYearStart,
+    });
+
+    if (!organization) {
+      return res.status(404).json({
+        success: false,
+        error: 'Organization not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: organization,
+    });
+  } catch (error: any) {
+    console.error('Error updating admin organization:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to update organization',
+    });
+  }
+}
+
+/**
  * Create organization
  */
 export async function createOrganization(req: AuthRequest, res: Response) {
@@ -108,6 +198,8 @@ export async function createOrganization(req: AuthRequest, res: Response) {
 
 /**
  * Update organization
+ * Allows super admins to update any organization
+ * Allows admins to update only their own organization
  */
 export async function updateOrganization(req: AuthRequest, res: Response) {
   try {
@@ -123,6 +215,30 @@ export async function updateOrganization(req: AuthRequest, res: Response) {
       cin,
       accountingYearStart,
     } = req.body;
+
+    // If user is admin (not super_admin), verify they're updating their own organization
+    if (req.user?.role === 'admin') {
+      const { query } = await import('../config/database');
+      const orgResult = await query(
+        `SELECT organization_id FROM user_organizations WHERE user_id = $1 LIMIT 1`,
+        [req.user.userId]
+      );
+
+      if (orgResult.rows.length === 0) {
+        return res.status(403).json({
+          success: false,
+          error: 'Forbidden: You are not associated with any organization',
+        });
+      }
+
+      const userOrgId = orgResult.rows[0].organization_id;
+      if (userOrgId !== id) {
+        return res.status(403).json({
+          success: false,
+          error: 'Forbidden: You can only update your own organization',
+        });
+      }
+    }
 
     const organization = await organizationService.updateOrganization(id, {
       name,

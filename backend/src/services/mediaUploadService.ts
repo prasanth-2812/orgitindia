@@ -65,9 +65,11 @@ const ALLOWED_VOICE_NOTE_TYPES = [
 
 // Storage configuration
 const storage = multer.diskStorage({
-  destination: async (req, file, cb) => {
-    await fs.mkdir(uploadDir, { recursive: true });
-    cb(null, uploadDir);
+  destination: (req, file, cb) => {
+    // Use promises version and handle with callback
+    fs.promises.mkdir(uploadDir, { recursive: true })
+      .then(() => cb(null, uploadDir))
+      .catch((error) => cb(error, uploadDir));
   },
   filename: (req, file, cb) => {
     const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;

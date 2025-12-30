@@ -23,7 +23,10 @@ const io = new Server(server, {
   },
 });
 
+const morgan = require('morgan');
+
 // Middleware
+app.use(morgan('dev')); // API Logging
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Increased for media uploads
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -37,6 +40,7 @@ app.use('/api/conversations', conversationRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/admin', require('./routes/admin'));
 
 // Health check
 app.get('/health', (req, res) => {

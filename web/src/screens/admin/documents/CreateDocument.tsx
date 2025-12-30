@@ -7,12 +7,30 @@ import { documentInstanceService } from '../../../services/documentInstanceServi
 import { Button } from '../../../components/shared';
 import { DocumentBuilderProvider, useDocumentBuilder } from '../../../components/document-builder/DocumentBuilderProvider';
 import { DocumentBuilderContent } from '../../../components/document-builder/DocumentBuilderLayout';
+import { useAuth } from '../../../context/AuthContext';
+import { organizationService } from '../../../services/organizationService';
 
 const DocumentFillerIntegration: React.FC<{ templateId: string | null; onBack: () => void }> = ({ templateId, onBack }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { state, dispatch } = useDocumentBuilder();
+  const { user } = useAuth();
   const [title, setTitle] = useState('');
+  const [templateLoaded, setTemplateLoaded] = useState(false);
+
+  // Fetch organization data for auto-fill
+  const { data: orgData } = useQuery(
+    ['admin-organization'],
+    async () => {
+      if (!user?.organizationId) return null;
+      // Use admin endpoint if user is admin, otherwise use super-admin endpoint
+      const response = user?.role === 'admin' 
+        ? await organizationService.getMyOrganization()
+        : await organizationService.getById(user.organizationId);
+      return response.data.data;
+    },
+    { enabled: !!user?.organizationId }
+  );
 
   const { isLoading } = useQuery(
     ['documentTemplate', templateId],
@@ -63,6 +81,7 @@ const DocumentFillerIntegration: React.FC<{ templateId: string | null; onBack: (
             type: 'LOAD_TEMPLATE',
             payload: { ...config, mode: 'fill' }
           });
+          setTemplateLoaded(true);
         } else {
           console.error('DEBUG: No valid config found for template');
           alert('This template is not supported by the new document builder.');
@@ -84,6 +103,45 @@ const DocumentFillerIntegration: React.FC<{ templateId: string | null; onBack: (
       dispatch({ type: 'SET_MODE', payload: 'fill' });
     }
   }, [state.mode, dispatch]);
+
+  // Auto-fill header from Entity Master Data when template loads and org data is available
+  useEffect(() => {
+    if (templateLoaded && orgData && state.header && templateId) {
+      // Only auto-fill if fields are empty (don't overwrite template defaults)
+      const updates: any = {};
+      
+      if (!state.header.orgName && orgData.name) {
+        updates.orgName = orgData.name;
+      }
+      if (!state.header.orgAddress && orgData.address) {
+        updates.orgAddress = orgData.address;
+      }
+      if (!state.header.orgGstin && orgData.gst) {
+        updates.orgGstin = orgData.gst;
+      }
+      if (!state.header.orgEmail && orgData.email) {
+        updates.orgEmail = orgData.email;
+      }
+      if (!state.header.orgMobile && orgData.mobile) {
+        updates.orgMobile = orgData.mobile;
+      }
+      
+      // Handle logo URL - construct full URL if relative
+      if (orgData.logoUrl && state.header.showLogo && !state.header.orgLogoUrl) {
+        let logoUrl = orgData.logoUrl;
+        if (logoUrl.startsWith('/')) {
+          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+          logoUrl = `${apiUrl}${logoUrl}`;
+        }
+        updates.orgLogoUrl = logoUrl;
+      }
+      
+      // Only dispatch if there are updates to make
+      if (Object.keys(updates).length > 0) {
+        dispatch({ type: 'UPDATE_HEADER', payload: updates });
+      }
+    }
+  }, [templateLoaded, orgData, templateId, state.header, dispatch]);
 
   const mutation = useMutation(
     (data: any) => documentInstanceService.create(data),

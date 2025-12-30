@@ -177,8 +177,24 @@ export const LivePreview: React.FC = () => {
                 {/* Header */}
                 <header className={`flex flex-col gap-4 border-b pb-6 mb-8 items-${headerLayout}`}>
                     {state.header.showLogo && (
-                        <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center text-gray-400">
-                            Logo
+                        <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center overflow-hidden">
+                            {state.header.orgLogoUrl ? (
+                                <img 
+                                    src={state.header.orgLogoUrl} 
+                                    alt="Company Logo" 
+                                    className="w-full h-full object-contain"
+                                    onError={(e) => {
+                                        // Fallback to placeholder if image fails to load
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                        if (target.parentElement) {
+                                            target.parentElement.innerHTML = '<span class="text-gray-400 text-xs">Logo</span>';
+                                        }
+                                    }}
+                                />
+                            ) : (
+                                <span className="text-gray-400 text-xs">Logo</span>
+                            )}
                         </div>
                     )}
                     {state.header.orgDetailsVisible && (
