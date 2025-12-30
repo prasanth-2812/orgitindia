@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { useQuery } from 'react-query';
+import React, { useState, useEffect, useRef } from 'react';
+import { useQuery, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
+import { format, formatDistanceToNow } from 'date-fns';
 import { BottomNav, Avatar } from '../../components/shared';
-import { groupService } from '../../services/groupService';
+import { conversationService, Conversation } from '../../services/conversationService';
+import { waitForSocketConnection, onSocketEvent, offSocketEvent } from '../../services/socketService';
 import { useAuth } from '../../context/AuthContext';
 
 type FilterType = 'All' | 'Direct' | 'Task Groups';
@@ -10,70 +12,170 @@ type FilterType = 'All' | 'Direct' | 'Task Groups';
 export const MainMessagingScreen: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [filter, setFilter] = useState<FilterType>('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const socketRef = useRef<any>(null);
 
-  const { data: groupsData } = useQuery('user-groups', () => groupService.getUserGroups());
-  const conversationGroups = groupsData?.data || [];
-
-  // Mock data for visual fidelity based on HTML design
-  const priorityTasks = [
+  // Fetch conversations
+  const { data: conversations = [], isLoading, refetch } = useQuery(
+    'conversations',
+    () => conversationService.getConversations(),
     {
-      id: 'p1',
-      title: 'Q3 Compliance Audit',
-      time: '10:42 AM',
-      status: 'URGENT',
-      message: 'Please upload the safety doc ASAP...',
-      count: 3,
-      type: 'task',
-      icon: 'assignment'
-    },
-    {
-      id: 'p2',
-      title: 'Inventory Check - Zone B',
-      time: 'Yesterday',
-      status: '',
-      message: 'Bob: Count is finished for aisle 4.',
-      type: 'inventory',
-      icon: 'inventory_2'
+      refetchInterval: 30000, // Refetch every 30 seconds
     }
-  ];
+  );
 
-  const recentMessages = [
-    {
-      id: 'm1',
-      name: 'Sarah Jenkins (HR)',
-      time: '10:45 AM',
-      message: 'Your leave request is approved.',
-      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD80gnqu5ArY1Ilub2C7pQQBntoFlWa3Cn3O8qjKoCEwdz6N1nzE_GYgj74LXPDSUPXLU4SJMCNCC0Y-YcgH0IpHTqVC6o5ZoDP1h495lTjJ5cYKvSnoHWG_nZrB_oKgwmQg2cQtw2izFF55QtuiYjqOi2ZZpJ8_rpKS-rHKdUXo-GfWJrGSVtQONjdAZCAOtuwDXNJ4rmhTfp3LGgD6uxLGh7qxWN7VyNyLy5Pw80Y8PTnMlV3mrRQOIKlacNNpLAVZ9JwDgswu8eq',
-      online: true,
-      status: 'online'
-    },
-    {
-      id: 'm2',
-      name: 'Mike Ross',
-      time: 'Tue',
-      message: 'Can we meet at 3pm to discuss?',
-      read: true,
-      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBw7a_0pieXBlrzjYYg8qYg9NIM6kFUM5t-hGmpYSDIgaa1wvduePkKQqn7AHXMt2MYI6XFeOW9DVNkm5Kx8GHHDCV4FTENYrAdiAzp3KPc3DaELhh2qh6crWgwlbfsTsZlJS3gxYX43DjOy3_Okw-qBqjr0kmrb4i8jgSY7DSiwFUDkTqSEoW0bIxDl05dZK_Axm4DULgn9vox6G9esoTttck-E_UpuYzccI9zJfKCfn5KhcaZEeSm9SDvX6mysMOnvH6_2sf7F21Z',
-    },
-    {
-      id: 'm3',
-      name: 'Alex Chen',
-      time: 'Mon',
-      message: 'Sent an attachment.',
-      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCJ34RN5JldXWRDnBQnhQ_0nTW--2ysbB3_ra-zyTNW6YSwcvGFgbpuFuYUdurhIsamEcXb2Fm8kd2QeggewtMqweKsWuhTuIc4Vb5co0XS-oBIWP8scrbO3lHaxPjFXZpUDNbMVTQDiIOiBzsBKJ_NhDr3qjg1nErsLN9H61N6qix-H0lunNKcSrOaFoP0rMydy4OJzt__MwT6XPjr7Qw0UjYG9n9M0P90fyCGpWqbV3SOybRkR04uGYjVW2li6aCVKYatqITAQ4G2',
-    },
-    {
-      id: 'm4',
-      name: 'Safety Committee',
-      time: 'Sun',
-      message: 'Weekly sync is cancelled.',
-      type: 'group',
-      avatar: '',
-      icon: 'groups'
+  // Filter conversations based on filter type
+  const filteredConversations = React.useMemo(() => {
+    let filtered = conversations;
+
+    // Apply type filter
+    if (filter === 'Direct') {
+      filtered = filtered.filter(conv => conv.type === 'direct' || !conv.is_group);
+    } else if (filter === 'Task Groups') {
+      filtered = filtered.filter(conv => conv.isTaskGroup || conv.is_task_group);
     }
-  ];
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(conv => {
+        const nameMatch = conv.name?.toLowerCase().includes(query);
+        const lastMessageMatch = conv.lastMessage?.content?.toLowerCase().includes(query);
+        const memberMatch = conv.otherMembers?.some(member => 
+          member.name?.toLowerCase().includes(query)
+        );
+        return nameMatch || lastMessageMatch || memberMatch;
+      });
+    }
+
+    // Sort: pinned first, then by last message time
+    return filtered.sort((a, b) => {
+      const aPinned = a.isPinned || a.is_pinned || false;
+      const bPinned = b.isPinned || b.is_pinned || false;
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      
+      const aTime = new Date(a.lastMessageTime || a.last_message_time || 0).getTime();
+      const bTime = new Date(b.lastMessageTime || b.last_message_time || 0).getTime();
+      return bTime - aTime;
+    });
+  }, [conversations, filter, searchQuery]);
+
+  // Setup socket listeners for real-time updates
+  useEffect(() => {
+    let isMounted = true;
+
+    const setupSocket = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const socket = await waitForSocketConnection();
+        if (!isMounted) return;
+
+        // Handle new messages - update conversation list
+        const handleNewMessage = (message: any) => {
+          if (!message.conversation_id) return;
+
+          // Invalidate conversations query to refetch
+          queryClient.invalidateQueries('conversations');
+        };
+
+        // Handle message status updates
+        const handleMessageStatusUpdate = (update: any) => {
+          if (update.conversationId) {
+            queryClient.invalidateQueries('conversations');
+          }
+        };
+
+        // Handle conversation messages read
+        const handleConversationMessagesRead = (data: any) => {
+          if (data.conversationId) {
+            queryClient.invalidateQueries('conversations');
+          }
+        };
+
+        onSocketEvent('new_message', handleNewMessage);
+        onSocketEvent('message_status_update', handleMessageStatusUpdate);
+        onSocketEvent('conversation_messages_read', handleConversationMessagesRead);
+
+        socketRef.current = socket;
+
+        return () => {
+          offSocketEvent('new_message', handleNewMessage);
+          offSocketEvent('message_status_update', handleMessageStatusUpdate);
+          offSocketEvent('conversation_messages_read', handleConversationMessagesRead);
+        };
+      } catch (error) {
+        console.error('Socket setup error:', error);
+      }
+    };
+
+    setupSocket();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [queryClient]);
+
+  // Format time for display
+  const formatTime = (dateString?: string) => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+      
+      if (diffInHours < 24) {
+        return format(date, 'h:mm a');
+      } else if (diffInHours < 48) {
+        return 'Yesterday';
+      } else if (diffInHours < 168) { // 7 days
+        return format(date, 'EEE');
+      } else {
+        return format(date, 'MMM d');
+      }
+    } catch {
+      return '';
+    }
+  };
+
+  // Get conversation display name
+  const getConversationName = (conv: Conversation) => {
+    if (conv.name) return conv.name;
+    if (conv.otherMembers && conv.otherMembers.length > 0) {
+      return conv.otherMembers[0].name || 'Unknown';
+    }
+    return 'Unknown';
+  };
+
+  // Get conversation photo
+  const getConversationPhoto = (conv: Conversation) => {
+    return conv.photoUrl || conv.group_photo || conv.otherMembers?.[0]?.profile_photo_url || '';
+  };
+
+  // Get last message preview
+  const getLastMessagePreview = (conv: Conversation) => {
+    const lastMsg = conv.lastMessage || conv.last_message;
+    if (!lastMsg) return 'No messages yet';
+    
+    const content = lastMsg.content || '';
+    const senderName = lastMsg.senderName || lastMsg.sender_name || '';
+    const currentUserId = user?.id || user?.userId;
+    const isFromMe = (lastMsg.senderId || lastMsg.sender_id) === currentUserId;
+    
+    if (conv.type === 'group' || conv.is_group) {
+      return `${isFromMe ? 'You' : senderName}: ${content}`;
+    }
+    return content;
+  };
+
+  // Get conversation ID for navigation
+  const getConversationId = (conv: Conversation) => {
+    return conv.conversationId || conv.id || '';
+  };
 
   return (
     <div className="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden pb-24 bg-background-light dark:bg-background-dark font-display antialiased transition-colors duration-200">
@@ -142,112 +244,89 @@ export const MainMessagingScreen: React.FC = () => {
       </div>
 
       <div className="flex flex-col mt-2 gap-1">
-        {/* Priority & Tasks Section */}
-        {filter === 'All' && (
+        {/* Conversations List */}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <p className="text-gray-400 text-sm">Loading conversations...</p>
+          </div>
+        ) : filteredConversations.length === 0 ? (
+          <div className="flex items-center justify-center py-12">
+            <p className="text-gray-400 text-sm">
+              {searchQuery ? 'No conversations found' : 'No conversations yet'}
+            </p>
+          </div>
+        ) : (
           <>
-            <div className="px-4 py-2 flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary text-sm">push_pin</span>
+            <div className="px-4 py-2 mt-1 flex items-center gap-2">
+              <span className="material-symbols-outlined text-text-sub-light dark:text-text-sub-dark text-sm">
+                {filter === 'Direct' ? 'person' : filter === 'Task Groups' ? 'assignment' : 'chat_bubble'}
+              </span>
               <p className="text-xs font-bold uppercase tracking-wider text-text-sub-light dark:text-text-sub-dark">
-                Priority & Tasks
+                {filter === 'Direct' ? 'Direct Messages' : filter === 'Task Groups' ? 'Task Groups' : 'All Conversations'}
               </p>
             </div>
-            {priorityTasks.map(task => (
-              <div key={task.id} className={`group relative flex items-center gap-4 ${task.status === 'URGENT' ? 'bg-surface-light dark:bg-surface-dark border-l-4 border-primary' : 'bg-background-light dark:bg-background-dark'} px-4 py-3 active:bg-primary/5 transition-colors cursor-pointer`} onClick={() => navigate(`/tasks/${task.id}`)}>
+
+            {filteredConversations.map((conv) => {
+              const convId = getConversationId(conv);
+              const convName = getConversationName(conv);
+              const convPhoto = getConversationPhoto(conv);
+              const lastMessage = getLastMessagePreview(conv);
+              const unreadCount = conv.unreadCount || conv.unread_count || 0;
+              const isPinned = conv.isPinned || conv.is_pinned || false;
+              const lastMessageTime = conv.lastMessageTime || conv.last_message_time;
+              const timeDisplay = formatTime(lastMessageTime);
+
+              return (
+                <div
+                  key={convId}
+                  className={`group flex items-center gap-4 ${isPinned ? 'bg-surface-light dark:bg-surface-dark border-l-4 border-primary' : 'bg-background-light dark:bg-background-dark'} px-4 py-3 active:bg-primary/5 transition-colors cursor-pointer`}
+                  onClick={() => navigate(`/messages/${convId}`)}
+                >
                 <div className="relative shrink-0">
-                  <div className={`bg-primary/10 flex items-center justify-center aspect-square rounded-xl size-14 shadow-sm`}>
-                    <span className="material-symbols-outlined text-primary text-[28px]">{task.icon}</span>
-                  </div>
-                  {task.status === 'URGENT' && (
-                    <div className="absolute -bottom-1 -right-1 bg-white dark:bg-surface-dark rounded-full p-0.5">
-                      <div className="bg-primary text-white rounded-full p-1 flex items-center justify-center size-5">
-                        <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>assignment</span>
+                    {conv.type === 'group' || conv.is_group ? (
+                      <div className="bg-primary/10 flex items-center justify-center aspect-square rounded-xl size-14 shadow-sm">
+                        {convPhoto ? (
+                          <img src={convPhoto} alt={convName} className="w-full h-full rounded-xl object-cover" />
+                        ) : (
+                          <span className="material-symbols-outlined text-primary text-[28px]">groups</span>
+                        )}
                       </div>
+                    ) : (
+                      <Avatar src={convPhoto} alt={convName} size="md" />
+                    )}
+                    {isPinned && (
+                      <div className="absolute -top-1 -right-1 bg-primary text-white rounded-full p-0.5">
+                        <span className="material-symbols-outlined text-[12px]">push_pin</span>
                     </div>
                   )}
                 </div>
                 <div className="flex flex-col justify-center flex-1 min-w-0">
                   <div className="flex justify-between items-baseline mb-0.5">
-                    <p className="text-text-main-light dark:text-text-main-dark text-base font-bold leading-normal truncate">{task.title}</p>
-                    <p className={`${task.status === 'URGENT' ? 'text-primary font-semibold' : 'text-text-sub-light dark:text-text-sub-dark font-normal'} text-xs shrink-0 ml-2`}>{task.time}</p>
+                      <p className="text-text-main-light dark:text-text-main-dark text-base font-semibold leading-normal truncate">
+                        {convName}
+                      </p>
+                      {timeDisplay && (
+                        <p className="text-text-sub-light dark:text-text-sub-dark text-xs font-normal shrink-0 ml-2">
+                          {timeDisplay}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 text-text-sub-light dark:text-text-sub-dark">
+                      <p className="text-sm font-normal leading-normal truncate">{lastMessage}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {task.status === 'URGENT' && <span className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 text-[10px] font-bold px-1.5 py-0.5 rounded">URGENT</span>}
-                    <p className="text-text-sub-light dark:text-text-sub-dark text-sm font-normal leading-normal truncate">{task.message}</p>
                   </div>
-                </div>
-                {task.count && (
+                  {unreadCount > 0 && (
                   <div className="shrink-0 flex flex-col items-end justify-center gap-1">
-                    <div className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-white text-[10px] font-bold">{task.count}</div>
-                  </div>
-                )}
+                      <div className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-white text-[10px] font-bold">
+                        {unreadCount > 99 ? '99+' : unreadCount}
               </div>
-            ))}
-            <div className="h-px bg-gray-200 dark:bg-gray-800 mx-4 my-1"></div>
-          </>
-        )}
-
-        {/* Recent Messages Section */}
-        <div className="px-4 py-2 mt-1 flex items-center gap-2">
-          <span className="material-symbols-outlined text-text-sub-light dark:text-text-sub-dark text-sm">
-            {filter === 'Direct' ? 'person' : 'chat_bubble'}
-          </span>
-          <p className="text-xs font-bold uppercase tracking-wider text-text-sub-light dark:text-text-sub-dark">
-            {filter === 'Direct' ? 'Direct Messages' : 'Recent Messages'}
-          </p>
-        </div>
-
-        {/* Combined Real + Mock Data Display */}
-        {/* Ideally we would merge groupsData with mock data or just use groupsData, but for visual match we use mock array first then real */}
-        {recentMessages.map((msg) => (
-          <div key={msg.id} className="group flex items-center gap-4 bg-background-light dark:bg-background-dark px-4 py-3 active:bg-primary/5 transition-colors cursor-pointer" onClick={() => navigate(`/messages/${msg.id}`)}>
-            <div className="relative shrink-0">
-              {msg.icon ? (
-                <div className="bg-primary/10 flex items-center justify-center aspect-square rounded-xl size-14 shadow-sm">
-                  <span className="material-symbols-outlined text-primary text-[28px]">{msg.icon}</span>
-                </div>
-              ) : (
-                <Avatar src={msg.avatar} alt={msg.name} size="md" online={msg.status === 'online'} />
-              )}
-            </div>
-            <div className="flex flex-col justify-center flex-1 min-w-0">
-              <div className="flex justify-between items-baseline mb-0.5">
-                <p className="text-text-main-light dark:text-text-main-dark text-base font-semibold leading-normal truncate">{msg.name}</p>
-                <p className="text-text-sub-light dark:text-text-sub-dark text-xs font-normal shrink-0 ml-2">{msg.time}</p>
-              </div>
-              <div className="flex items-center gap-1 text-text-sub-light dark:text-text-sub-dark">
-                {msg.read && <span className="material-symbols-outlined text-[16px]">done_all</span>}
-                <p className={`text-sm ${msg.status === 'online' ? 'font-medium text-text-main-light dark:text-text-main-dark' : 'font-normal text-text-sub-light dark:text-text-sub-dark'} leading-normal truncate`}>{msg.message}</p>
-              </div>
-            </div>
-            {msg.status === 'online' && (
-              <div className="shrink-0 flex items-center justify-center">
-                <div className="size-3 rounded-full bg-primary"></div>
               </div>
             )}
-          </div>
-        ))}
-
-        {/* Render real data from backend if available and not redundant */}
-        {conversationGroups.length > 0 && (
-          <>
-            <div className="px-4 py-2 mt-2">
-              <p className="text-xs font-bold uppercase tracking-wider text-text-sub-light dark:text-text-sub-dark">All Conversations</p>
-            </div>
-            {conversationGroups.map((group: any) => (
-              <div key={group.id} className="group flex items-center gap-4 bg-background-light dark:bg-background-dark px-4 py-3 active:bg-primary/5 transition-colors cursor-pointer" onClick={() => navigate(`/messages/${group.id}`)}>
-                <div className="relative shrink-0">
-                  <Avatar src={group.photoUrl} alt={group.name} size="md" />
                 </div>
-                <div className="flex flex-col justify-center flex-1 min-w-0">
-                  <div className="flex justify-between items-baseline mb-0.5">
-                    <p className="text-text-main-light dark:text-text-main-dark text-base font-semibold leading-normal truncate">{group.name || 'Group'}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </>
         )}
-
       </div>
 
       <BottomNav />

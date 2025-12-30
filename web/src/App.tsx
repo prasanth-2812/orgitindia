@@ -10,8 +10,9 @@ import { EmployeeDashboard } from './screens/dashboard/EmployeeDashboard';
 import { MainMessagingScreen } from './screens/messaging/MainMessagingScreen';
 import { NewChatScreen } from './screens/messaging/NewChatScreen';
 import { DirectChatConversation } from './screens/messaging/DirectChatConversation';
+import { TaskGroupChatConversation } from './screens/messaging/TaskGroupChatConversation';
 import { TaskCreationScreen } from './screens/tasks/TaskCreationScreen';
-import { TaskListManagement } from './screens/tasks/TaskListManagement';
+import { TaskDashboardScreen } from './screens/tasks/TaskDashboardScreen';
 import { TaskDetailsScreen } from './screens/tasks/TaskDetailsScreen';
 import { DocumentManagementHome } from './screens/documents/DocumentManagementHome';
 import { DocumentLibrary } from './screens/admin/documents/DocumentLibrary';
@@ -173,7 +174,7 @@ function App() {
               }
             />
             <Route
-              path="/messages/:receiverId"
+              path="/messages/:conversationId"
               element={
                 <ProtectedRoute>
                   <DirectChatConversation />
@@ -181,10 +182,18 @@ function App() {
               }
             />
             <Route
+              path="/messages/task-group/:conversationId"
+              element={
+                <ProtectedRoute>
+                  <TaskGroupChatConversation />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/tasks"
               element={
                 <ProtectedRoute>
-                  <TaskListManagement />
+                  <TaskDashboardScreen />
                 </ProtectedRoute>
               }
             />
@@ -367,7 +376,7 @@ function App() {
               path="/admin/tasks"
               element={
                 <AdminProtectedRoute>
-                  <TaskListManagement />
+                  <TaskDashboardScreen />
                 </AdminProtectedRoute>
               }
             />

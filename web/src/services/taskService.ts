@@ -16,30 +16,34 @@ export interface CreateTaskRequest {
 }
 
 export const taskService = {
-  createTask: async (data: CreateTaskRequest) => {
-    const response = await api.post('/tasks', data);
-    return response.data;
+  createTask: async (data: any) => {
+    // Mobile format: task_type, assignee_ids, start_date, target_date, due_date, recurrence_type, auto_escalate
+    const response = await api.post('/api/tasks', data);
+    // Backend returns: { success: true, data: task } or { task: ... }
+    return response.data.success ? response.data.data : response.data.task || response.data;
   },
 
   getTasks: async (filters?: {
     status?: string;
     category?: string;
-    taskType?: string;
-    isSelfTask?: boolean;
+    type?: string; // Mobile uses 'type', not 'taskType'
+    priority?: string;
   }) => {
     const params = new URLSearchParams();
     if (filters?.status) params.append('status', filters.status);
     if (filters?.category) params.append('category', filters.category);
-    if (filters?.taskType) params.append('taskType', filters.taskType);
-    if (filters?.isSelfTask) params.append('isSelfTask', 'true');
+    if (filters?.type) params.append('type', filters.type); // Mobile uses 'type'
+    if (filters?.priority) params.append('priority', filters.priority);
 
-    const response = await api.get(`/tasks?${params.toString()}`);
-    return response.data;
+    const response = await api.get(`/api/tasks?${params.toString()}`);
+    // Backend returns: { tasks: [...] } or { data: [...] }
+    return response.data.tasks || response.data.data || [];
   },
 
   getTask: async (taskId: string) => {
-    const response = await api.get(`/tasks/${taskId}`);
-    return response.data;
+    const response = await api.get(`/api/tasks/${taskId}`);
+    // Backend returns: { success: true, data: task } or { task: ... }
+    return response.data.success ? response.data.data : response.data.task || response.data;
   },
 
   getTaskAssignments: async (taskId: string) => {
@@ -48,12 +52,13 @@ export const taskService = {
   },
 
   acceptTask: async (taskId: string) => {
-    const response = await api.post(`/tasks/${taskId}/accept`);
+    const response = await api.post(`/api/tasks/${taskId}/accept`);
     return response.data;
   },
 
-  rejectTask: async (taskId: string, rejectionReason: string) => {
-    const response = await api.post(`/tasks/${taskId}/reject`, { rejectionReason });
+  rejectTask: async (taskId: string, reason: string) => {
+    // Mobile uses 'reason', not 'rejectionReason'
+    const response = await api.post(`/api/tasks/${taskId}/reject`, { reason });
     return response.data;
   },
 

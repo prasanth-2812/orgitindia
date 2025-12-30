@@ -4,6 +4,7 @@ import { Message, MessageType, MessageVisibilityMode } from '../../../shared/src
 export interface SendMessageRequest {
   receiverId?: string;
   groupId?: string;
+  conversationId?: string; // New: support conversationId
   messageType: MessageType;
   content?: string;
   mediaUrl?: string;
@@ -40,13 +41,13 @@ export const messageService = {
   },
 
   editMessage: async (messageId: string, content: string) => {
-    const response = await api.put(`/messages/${messageId}/edit`, { content });
+    const response = await api.put(`/messages/${messageId}`, { content });
     return response.data;
   },
 
-  deleteMessage: async (messageId: string, deleteForEveryone = false) => {
+  deleteMessage: async (messageId: string, deleteForAll = false) => {
     const response = await api.delete(`/messages/${messageId}`, {
-      data: { deleteForEveryone },
+      data: { deleteForAll },
     });
     return response.data;
   },
@@ -56,8 +57,13 @@ export const messageService = {
     return response.data;
   },
 
-  starMessage: async (messageId: string, isStarred: boolean) => {
-    const response = await api.post(`/messages/${messageId}/star`, { isStarred });
+  starMessage: async (messageId: string) => {
+    const response = await api.post(`/messages/${messageId}/star`);
+    return response.data;
+  },
+
+  unstarMessage: async (messageId: string) => {
+    const response = await api.delete(`/messages/${messageId}/star`);
     return response.data;
   },
 
@@ -67,6 +73,74 @@ export const messageService = {
     if (groupId) params.append('groupId', groupId);
 
     const response = await api.get(`/messages/search?${params.toString()}`);
+    return response.data;
+  },
+
+  /**
+   * Get messages by conversationId (supports both UUID and "direct_<userId>" format)
+   */
+  getMessagesByConversationId: async (conversationId: string, limit = 50, offset = 0) => {
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+      offset: offset.toString(),
+    });
+    const response = await api.get(`/messages/${conversationId}?${params.toString()}`);
+    return response.data;
+  },
+
+  /**
+   * Mark messages as read by conversationId
+   */
+  markMessagesAsReadByConversationId: async (conversationId: string) => {
+    const response = await api.put(`/messages/${conversationId}/read`);
+    return response.data;
+  },
+
+  /**
+   * Add reaction to a message
+   */
+  addReaction: async (messageId: string, reaction: string) => {
+    const response = await api.post(`/messages/${messageId}/reactions`, { reaction });
+    return response.data;
+  },
+
+  /**
+   * Remove reaction from a message
+   */
+  removeReaction: async (messageId: string, reaction: string) => {
+    const response = await api.delete(`/messages/${messageId}/reactions/${reaction}`);
+    return response.data;
+  },
+
+  /**
+   * Forward a message to another conversation
+   */
+  forwardMessage: async (messageId: string, conversationId?: string, receiverId?: string, groupId?: string) => {
+    const response = await api.post(`/messages/${messageId}/forward`, {
+      conversationId,
+      receiverId,
+      groupId,
+    });
+    return response.data;
+  },
+
+  /**
+   * Search messages in a conversation
+   */
+  searchMessagesInConversation: async (conversationId: string, query: string, limit = 50) => {
+    const params = new URLSearchParams({
+      query,
+      limit: limit.toString(),
+    });
+    const response = await api.get(`/messages/search/${conversationId}?${params.toString()}`);
+    return response.data;
+  },
+
+  /**
+   * Get all starred messages
+   */
+  getStarredMessages: async () => {
+    const response = await api.get('/messages/starred/all');
     return response.data;
   },
 };

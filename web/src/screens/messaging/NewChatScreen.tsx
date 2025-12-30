@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from 'react-query';
+import { useQuery, useMutation } from 'react-query';
 import { BottomNav, TopAppBar, Avatar } from '../../components/shared';
 import { chatUserService } from '../../services/chatUserService';
+import { conversationService } from '../../services/conversationService';
 import { User } from '../../../shared/src/types';
 
 export const NewChatScreen: React.FC = () => {
@@ -19,8 +20,30 @@ export const NewChatScreen: React.FC = () => {
 
   const users: User[] = data?.data || [];
 
-  const handleSelectUser = (userId: string) => {
-    navigate(`/messages/${userId}`);
+  // Create conversation mutation
+  const createConversationMutation = useMutation(
+    (otherUserId: string) => conversationService.createConversation(otherUserId),
+    {
+      onSuccess: (conversationId) => {
+        navigate(`/messages/${conversationId}`);
+      },
+      onError: (error: any) => {
+        // If conversation already exists, use direct format
+        const conversationId = `direct_${users.find(u => u.id === users[0]?.id)?.id}`;
+        navigate(`/messages/${conversationId}`);
+      }
+    }
+  );
+
+  const handleSelectUser = async (userId: string) => {
+    try {
+      // Try to create conversation first
+      await createConversationMutation.mutateAsync(userId);
+    } catch (error) {
+      // If creation fails, use direct format (conversation might already exist)
+      const conversationId = `direct_${userId}`;
+      navigate(`/messages/${conversationId}`);
+    }
   };
 
   return (
