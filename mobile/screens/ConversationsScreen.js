@@ -796,15 +796,6 @@ const ConversationsScreen = ({ navigation }) => {
 
         <View style={styles.topBar}>
           <View style={styles.topBarLeft}>
-            <TouchableOpacity
-              style={styles.headerAvatar}
-              onPress={() => navigation.navigate('Profile')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.headerAvatarText}>
-                {user?.name ? getAvatarInitials(user.name) : 'U'}
-              </Text>
-            </TouchableOpacity>
             <Text style={styles.appTitle}>ORGIT</Text>
           </View>
           <View style={styles.topBarRight}>
@@ -986,20 +977,6 @@ const styles = StyleSheet.create({
   topBarRight: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  headerAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: PRIMARY_LIGHT,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  headerAvatarText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
   },
   appTitle: {
     color: '#FFFFFF',

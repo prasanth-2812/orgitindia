@@ -322,11 +322,18 @@ export const searchMessagesHandler = async (req: Request, res: Response) => {
       });
     }
 
+    // Construct conversationId from receiverId or groupId
+    let conversationId: string | null = null;
+    if (receiverId) {
+      conversationId = `direct_${receiverId}`;
+    } else if (groupId) {
+      conversationId = `group_${groupId}`;
+    }
+
     const messages = await searchMessages(
       userId,
       q as string,
-      (receiverId as string) || null,
-      (groupId as string) || null,
+      conversationId,
       limit
     );
 

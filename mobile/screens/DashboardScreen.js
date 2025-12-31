@@ -2,9 +2,25 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, StatusBar } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '../context/AuthContext';
 
 export default function DashboardScreen({ navigation }) {
     const [taskView, setTaskView] = useState('self');
+    const { user } = useAuth();
+
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return 'Good Morning';
+        if (hour < 17) return 'Good Afternoon';
+        return 'Good Evening';
+    };
+
+    const getAvatarInitials = (name) => {
+        if (!name) return 'U';
+        const parts = name.trim().split(' ');
+        if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+        return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    };
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -13,16 +29,28 @@ export default function DashboardScreen({ navigation }) {
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.headerLeft}>
-                    <View style={styles.avatarContainer}>
-                        <Image
-                            source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuAHx9e9D_5sUa2ulTO6bWzQ7uiI7wq3dDBgH6lQeq-DWrCg2Vm-QL_fgL3IZAyFgBkpqk9-qsyhgVMLFetdlJtQunQl9PI8rqU-BpQWl88MayrAL6d28wIRjg9KHnGk6W0ziRGED2HnX5cvTGWUqDXlBICJMJhzYUNtUfao3MZlWJ3T2aTYW00I7pARA0BKohW1mfc3Hynm0wUdi3QjtwPE-yyuHmxYhxfo3xj9TGF2ngWc7SKYjvEECbc6Jmkbgh-Vx44q5Xky2uuV" }}
-                            style={styles.avatar}
-                        />
+                    <TouchableOpacity
+                        style={styles.avatarContainer}
+                        onPress={() => navigation.navigate('Profile')}
+                        activeOpacity={0.8}
+                    >
+                        {user?.profilePhotoUrl ? (
+                            <Image
+                                source={{ uri: user.profilePhotoUrl }}
+                                style={styles.avatar}
+                            />
+                        ) : (
+                            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                                <Text style={styles.avatarText}>
+                                    {getAvatarInitials(user?.name)}
+                                </Text>
+                            </View>
+                        )}
                         <View style={styles.onlineBadge} />
-                    </View>
+                    </TouchableOpacity>
                     <View>
-                        <Text style={styles.greeting}>Good Morning,</Text>
-                        <Text style={styles.userName}>Sarah Jenkins</Text>
+                        <Text style={styles.greeting}>{getGreeting()},</Text>
+                        <Text style={styles.userName}>{user?.name || 'User'}</Text>
                     </View>
                 </View>
                 <TouchableOpacity style={styles.notificationBtn}>
@@ -194,6 +222,16 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         borderWidth: 2,
         borderColor: '#fce7f3', // primary/20ish
+    },
+    avatarPlaceholder: {
+        backgroundColor: '#a413ec',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    avatarText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '700',
     },
     onlineBadge: {
         position: 'absolute',

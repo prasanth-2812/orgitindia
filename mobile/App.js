@@ -184,9 +184,26 @@ const RootNavigator = () => {
     );
   }
 
+  if (!isAuthenticated) {
+    return (
+      <NavigationContainer>
+        <AuthStack />
+      </NavigationContainer>
+    );
+  }
+
+  // Root Stack for authenticated users - allows Profile to be accessible from all tabs
+  const RootStack = () => (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="UserProfile" component={UserProfileScreen} />
+    </Stack.Navigator>
+  );
+
   return (
     <NavigationContainer>
-      {isAuthenticated ? <MainTabs /> : <AuthStack />}
+      <RootStack />
     </NavigationContainer>
   );
 };
