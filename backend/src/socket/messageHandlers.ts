@@ -383,12 +383,12 @@ export const setupMessageHandlers = (io: Server) => {
               actualConversationId = String(convResult.rows[0].id);
 
               await client.query(
-                'INSERT INTO conversation_members (conversation_id, user_id, role, joined_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)',
+                'INSERT INTO conversation_members (conversation_id, user_id, role, added_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)',
                 [actualConversationId, userId, 'member']
               );
 
               await client.query(
-                'INSERT INTO conversation_members (conversation_id, user_id, role, joined_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)',
+                'INSERT INTO conversation_members (conversation_id, user_id, role, added_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)',
                 [actualConversationId, otherUserId, 'member']
               );
 
@@ -427,34 +427,19 @@ export const setupMessageHandlers = (io: Server) => {
 
         const isGroup = convResult.rows[0].is_group || convResult.rows[0].is_task_group;
 
-        // Determine receiver_id for message insertion
-        // NOTE: For task groups and new schema group conversations, we use conversation_id only
-        // Do NOT set group_id as it references the old 'groups' table, not 'conversations'
-        let receiverId: string | null = null;
-
-        if (!isGroup) {
-          // For direct conversations, get the other user's ID
-          const otherMemberResult = await query(
-            'SELECT user_id FROM conversation_members WHERE conversation_id = $1 AND user_id != $2 LIMIT 1',
-            [actualConversationId, userId]
-          );
-          if (otherMemberResult.rows.length > 0) {
-            receiverId = otherMemberResult.rows[0].user_id;
-          }
-        }
-        // For group/task group conversations: use conversation_id only, leave group_id NULL
-
         // Get sender info (matching message-backend: use profile_photo)
         const userResult = await query(
-          'SELECT name, COALESCE(profile_photo, profile_photo_url) as profile_photo FROM users WHERE id = $1',
+          'SELECT name, profile_photo_url as profile_photo FROM users WHERE id = $1',
           [userId]
         );
         const senderName = userResult.rows[0]?.name || 'Unknown';
         const senderPhoto = userResult.rows[0]?.profile_photo || null;
 
         // Save message to database
-        // For task groups and new schema: use conversation_id only, leave group_id NULL
-        // The CHECK constraint allows conversation_id to satisfy it (via fix-messages-check-constraint.sql)
+        // IMPORTANT: When using conversation_id, receiver_id MUST be NULL to satisfy the check constraint
+        // The check constraint requires: (receiver_id IS NULL AND conversation_id IS NOT NULL) OR
+        // (receiver_id IS NOT NULL AND conversation_id IS NULL)
+        // For conversation-based messages, we use conversation_id only and leave receiver_id NULL
         const result = await query(
           `INSERT INTO messages (
             conversation_id, sender_id, content, message_type, media_url, media_thumbnail,
@@ -462,7 +447,7 @@ export const setupMessageHandlers = (io: Server) => {
             location_lat, location_lng, location_address, is_live_location, live_location_expires_at,
             receiver_id, sender_organization_id, visibility_mode, status
           )
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, 'sent')
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NULL, $16, $17, 'sent')
            RETURNING *`,
           [
             actualConversationId, // $1: conversation_id (UUID format)
@@ -480,9 +465,8 @@ export const setupMessageHandlers = (io: Server) => {
             locationAddress || null, // $13: location_address
             isLiveLocation || false, // $14: is_live_location
             liveLocationExpiresAt || null, // $15: live_location_expires_at
-            receiverId || null, // $16: receiver_id (for direct messages only, NULL for groups)
-            organizationId, // $17: sender_organization_id
-            'shared_to_group', // $18: visibility_mode
+            organizationId, // $16: sender_organization_id (moved from $17)
+            'shared_to_group', // $17: visibility_mode (moved from $18)
           ]
         );
 

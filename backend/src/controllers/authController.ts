@@ -613,7 +613,6 @@ export const getUserById = async (req: Request, res: Response) => {
         u.id,
         u.name,
         u.mobile,
-        u.phone,
         p.about,
         p.contact_number,
         p.profile_photo,
@@ -638,9 +637,9 @@ export const getUserById = async (req: Request, res: Response) => {
       user: {
         id: user.id,
         name: user.name,
-        phone: user.phone || user.mobile,
+        phone: user.mobile,
         about: user.about || 'Hey there! I am using OrgIT.',
-        contact_number: user.contact_number || user.phone || user.mobile,
+        contact_number: user.contact_number || user.mobile,
         profile_photo: user.profile_photo || user.profile_photo_url || null,
       },
     });
@@ -713,7 +712,6 @@ export const getCurrentUser = async (req: Request, res: Response) => {
         u.id,
         u.name,
         u.mobile,
-        u.phone,
         u.role,
         u.status,
         u.created_at,
@@ -750,7 +748,7 @@ export const getCurrentUser = async (req: Request, res: Response) => {
       data: {
         id: userRow.id,
         mobile: userRow.mobile,
-        phone: userRow.phone || userRow.mobile,
+        phone: userRow.mobile,
         name: userRow.name,
         role: userRow.role,
         status: userRow.status,
@@ -758,7 +756,7 @@ export const getCurrentUser = async (req: Request, res: Response) => {
         profile_photo: userRow.profile_photo || userRow.profile_photo_url || null,
         bio: userRow.bio || undefined,
         about: userRow.about || userRow.bio || undefined,
-        contact_number: userRow.contact_number || userRow.phone || userRow.mobile || undefined,
+        contact_number: userRow.contact_number || userRow.mobile || undefined,
         organizationId: organizationId || undefined,
       },
     });

@@ -316,64 +316,84 @@ const ChatScreen = ({ route, navigation }) => {
             );
           }
           
-          // CRITICAL FIX: Check if this is replacing a temp message (optimistic update)
-          // This should be checked FIRST before checking for other duplicates
-          // This handles temp messages from both current user and other users
-          const tempMessageIndex = prev.findIndex((msg) => {
-            // Must be a temp message
-            if (!msg.id || !msg.id.startsWith('temp_')) return false;
+          // CRITICAL FIX: For our own messages, ALWAYS remove ALL temp messages from this user
+          // This prevents duplicates - we never want both temp and real messages for our own messages
+          if (isMyMessageInState) {
+            const allTempMessagesFromUser = prev.filter(msg => {
+              if (!msg.id || !msg.id.startsWith('temp_')) return false;
+              return (msg.sender_id === currentUserId || msg.senderId === currentUserId);
+            });
             
-            // Check sender match
-            const msgSenderId = msg.sender_id || msg.senderId;
-            const newSenderId = normalizedMessage.sender_id || normalizedMessage.senderId;
-            const sameSender = msgSenderId === newSenderId;
-            
-            // Check content match (normalize whitespace)
-            const msgContent = (msg.content || '').trim();
-            const newContent = (normalizedMessage.content || '').trim();
-            const sameContent = msgContent === newContent;
-            
-            // Check time difference (allow up to 15 seconds for network delay)
-            const msgTime = new Date(msg.created_at || 0).getTime();
-            const newTime = new Date(normalizedMessage.created_at || 0).getTime();
-            const timeDiff = Math.abs(msgTime - newTime);
-            
-            // Match if: temp message, same sender, same content, and within 15 seconds
-            const isMatch = sameSender && sameContent && timeDiff < 15000;
-            
-            if (isMatch) {
-              console.log('🔍 Temp message match found:', {
-                tempId: msg.id,
-                tempContent: msgContent.substring(0, 20),
-                tempSender: msgSenderId,
-                tempTime: new Date(msg.created_at).toISOString(),
-                realId: normalizedMessage.id,
-                realContent: newContent.substring(0, 20),
-                realSender: newSenderId,
-                realTime: new Date(normalizedMessage.created_at).toISOString(),
-                timeDiff: timeDiff + 'ms'
+            if (allTempMessagesFromUser.length > 0) {
+              // Remove all temp messages from this user and the real message if it already exists
+              const tempIds = allTempMessagesFromUser.map(m => m.id);
+              const updated = prev
+                .filter(msg => !tempIds.includes(msg.id))
+                .filter(msg => msg.id !== normalizedMessage.id);
+              
+              // Always add the real message
+              updated.push(normalizedMessage);
+              
+              console.log('✅ Replaced temp messages for own message:', {
+                tempIds,
+                realMessageId: normalizedMessage.id,
+                content: normalizedMessage.content?.substring(0, 50),
+                beforeCount: prev.length,
+                afterCount: updated.length
               });
+              
+              // Sort after replacement to ensure correct order
+              updated.sort((a, b) => {
+                const timeA = new Date(a.created_at || 0).getTime();
+                const timeB = new Date(b.created_at || 0).getTime();
+                return timeA - timeB;
+              });
+              return updated;
             }
-            
-            return isMatch;
-          });
+          }
           
-          if (tempMessageIndex !== -1) {
-            // Replace temp message with real one
-            console.log('✅ Replacing temp message with real message:', {
-              tempId: prev[tempMessageIndex].id,
-              realId: normalizedMessage.id,
-              tempIndex: tempMessageIndex
+          // For other users' messages, check if this is replacing a temp message (optimistic update)
+          if (!isMyMessageInState) {
+            const tempMessageIndex = prev.findIndex((msg) => {
+              // Must be a temp message
+              if (!msg.id || !msg.id.startsWith('temp_')) return false;
+              
+              // Check sender match
+              const msgSenderId = msg.sender_id || msg.senderId;
+              const newSenderId = normalizedMessage.sender_id || normalizedMessage.senderId;
+              const sameSender = msgSenderId === newSenderId;
+              
+              // Check content match (normalize whitespace)
+              const msgContent = (msg.content || '').trim();
+              const newContent = (normalizedMessage.content || '').trim();
+              const sameContent = msgContent === newContent;
+              
+              // Check time difference (allow up to 15 seconds for network delay)
+              const msgTime = new Date(msg.created_at || 0).getTime();
+              const newTime = new Date(normalizedMessage.created_at || 0).getTime();
+              const timeDiff = Math.abs(msgTime - newTime);
+              
+              // Match if: temp message, same sender, same content, and within 15 seconds
+              return sameSender && sameContent && timeDiff < 15000;
             });
-            const updated = [...prev];
-            updated[tempMessageIndex] = normalizedMessage;
-            // Sort after replacement to ensure correct order
-            updated.sort((a, b) => {
-              const timeA = new Date(a.created_at || 0).getTime();
-              const timeB = new Date(b.created_at || 0).getTime();
-              return timeA - timeB;
-            });
-            return updated;
+            
+            if (tempMessageIndex !== -1) {
+              // Replace temp message with real one
+              console.log('✅ Replacing temp message with real message:', {
+                tempId: prev[tempMessageIndex].id,
+                realId: normalizedMessage.id,
+                tempIndex: tempMessageIndex
+              });
+              const updated = [...prev];
+              updated[tempMessageIndex] = normalizedMessage;
+              // Sort after replacement to ensure correct order
+              updated.sort((a, b) => {
+                const timeA = new Date(a.created_at || 0).getTime();
+                const timeB = new Date(b.created_at || 0).getTime();
+                return timeA - timeB;
+              });
+              return updated;
+            }
           }
           
           // CRITICAL FIX: For messages from current user, check for duplicate by content + sender + time
@@ -630,6 +650,30 @@ const ChatScreen = ({ route, navigation }) => {
         }, 2000);
       }
 
+      // Cleanup: Remove old temp messages periodically (every 5 seconds)
+      // This ensures temp messages don't persist if socket events fail
+      const tempMessageCleanupInterval = setInterval(() => {
+        setMessages((prev) => {
+          const currentUserId = user?.id || user?.userId;
+          const now = Date.now();
+          const thirtySecondsAgo = now - 30000; // 30 seconds
+          
+          const oldTempMessages = prev.filter(msg => {
+            if (!msg.id?.startsWith('temp_')) return false;
+            if (msg.sender_id !== currentUserId && msg.senderId !== currentUserId) return false;
+            const msgTime = new Date(msg.created_at || 0).getTime();
+            return msgTime < thirtySecondsAgo;
+          });
+          
+          if (oldTempMessages.length > 0) {
+            console.log('[tempMessageCleanup] Removing old temp messages:', oldTempMessages.map(m => m.id));
+            return prev.filter(msg => !oldTempMessages.find(t => t.id === msg.id));
+          }
+          
+          return prev;
+        });
+      }, 5000);
+      
       // Return cleanup function
       return () => {
         try {
@@ -637,6 +681,11 @@ const ChatScreen = ({ route, navigation }) => {
           if (onlineCheckInterval) {
             clearInterval(onlineCheckInterval);
             onlineCheckInterval = null;
+          }
+          
+          // Clear temp message cleanup interval
+          if (tempMessageCleanupInterval) {
+            clearInterval(tempMessageCleanupInterval);
           }
           
           // Leave conversation room
@@ -650,8 +699,8 @@ const ChatScreen = ({ route, navigation }) => {
         socket.off('message_reaction_added');
         socket.off('message_reaction_removed');
           socket.off('user_online');
-          socket.off('user_offline');
-          socket.off('user_online_status');
+        socket.off('user_offline');
+        socket.off('user_online_status');
         } catch (error) {
           console.error('Socket cleanup error:', error);
         }
@@ -669,18 +718,30 @@ const ChatScreen = ({ route, navigation }) => {
       // Normalize messages to ensure consistent field names
       const normalizedMessages = data.map((msg) => normalizeMessage(msg)).filter(msg => msg !== null);
       
+      // Remove any temp messages when loading from API (they should have been replaced by real messages)
+      const currentUserId = user?.id || user?.userId;
+      const messagesWithoutTemp = normalizedMessages.filter(msg => {
+        // Keep real messages and temp messages from other users (shouldn't happen, but safety check)
+        if (!msg.id?.startsWith('temp_')) return true;
+        // Remove temp messages from current user - they should have real messages now
+        if (msg.sender_id === currentUserId || msg.senderId === currentUserId) {
+          console.log('[loadMessages] Removing temp message from loaded data:', msg.id);
+          return false;
+        }
+        return true;
+      });
+      
       // Sort messages by created_at to ensure correct chronological order
-      normalizedMessages.sort((a, b) => {
+      messagesWithoutTemp.sort((a, b) => {
         const timeA = new Date(a.created_at || 0).getTime();
         const timeB = new Date(b.created_at || 0).getTime();
         return timeA - timeB;
       });
       
-      console.log('Normalized and sorted messages:', normalizedMessages.length);
-      setMessages(normalizedMessages);
+      console.log('Normalized and sorted messages:', messagesWithoutTemp.length);
+      setMessages(messagesWithoutTemp);
       // Calculate unread count (messages from other users that are not read)
-      const currentUserId = user?.id || user?.userId;
-      const unread = normalizedMessages.filter(
+      const unread = messagesWithoutTemp.filter(
         (msg) => {
           const msgSenderId = msg.sender_id || msg.senderId;
           return msgSenderId !== currentUserId && msg.status !== 'read' && !msg.deleted_at;

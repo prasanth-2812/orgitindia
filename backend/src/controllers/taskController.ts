@@ -22,11 +22,9 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
             'id', u.id,
             'name', u.name,
             'phone', u.mobile,
-            'profile_photo', u.profile_photo,
+            'profile_photo', u.profile_photo_url,
             'accepted_at', ta.accepted_at,
-            'rejected_at', ta.rejected_at,
-            'has_accepted', CASE WHEN ta.accepted_at IS NOT NULL THEN true ELSE false END,
-            'has_rejected', CASE WHEN ta.rejected_at IS NOT NULL THEN true ELSE false END
+            'has_accepted', CASE WHEN ta.accepted_at IS NOT NULL THEN true ELSE false END
           )
         ) FILTER (WHERE u.id IS NOT NULL) as assignees,
         (
@@ -37,19 +35,12 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
         (
           SELECT COUNT(*)
           FROM task_assignees ta2
-          WHERE ta2.task_id = t.id AND ta2.rejected_at IS NOT NULL
-        ) as rejected_count,
-        (
-          SELECT COUNT(*)
-          FROM task_assignees ta2
           WHERE ta2.task_id = t.id
         ) as total_assignees,
         (
           SELECT jsonb_build_object(
             'accepted_at', ta3.accepted_at,
-            'rejected_at', ta3.rejected_at,
-            'has_accepted', CASE WHEN ta3.accepted_at IS NOT NULL THEN true ELSE false END,
-            'has_rejected', CASE WHEN ta3.rejected_at IS NOT NULL THEN true ELSE false END
+            'has_accepted', CASE WHEN ta3.accepted_at IS NOT NULL THEN true ELSE false END
           )
           FROM task_assignees ta3
           WHERE ta3.task_id = t.id AND ta3.user_id = $1
@@ -86,10 +77,11 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
       params.push(status);
     }
 
-    if (priority) {
-      conditions.push(`t.priority = $${params.length + 1}`);
-      params.push(priority);
-    }
+    // Note: priority column doesn't exist in tasks table, so priority filter is removed
+    // if (priority) {
+    //   conditions.push(`t.priority = $${params.length + 1}`);
+    //   params.push(priority);
+    // }
 
     if (conditions.length > 0) {
       querySQL += ` AND ${conditions.join(' AND ')}`;
@@ -98,12 +90,7 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
     querySQL += `
       GROUP BY t.id, c.id, c.name
       ORDER BY 
-        CASE t.priority 
-          WHEN 'high' THEN 1 
-          WHEN 'medium' THEN 2 
-          WHEN 'low' THEN 3 
-        END,
-        t.due_date ASC,
+        t.due_date ASC NULLS LAST,
         t.created_at DESC
     `;
 
@@ -135,19 +122,15 @@ export const getTask = async (req: AuthRequest, res: Response) => {
             'id', u.id,
             'name', u.name,
             'phone', u.mobile,
-            'profile_photo', u.profile_photo,
+            'profile_photo', u.profile_photo_url,
             'accepted_at', ta.accepted_at,
-            'rejected_at', ta.rejected_at,
-            'has_accepted', CASE WHEN ta.accepted_at IS NOT NULL THEN true ELSE false END,
-            'has_rejected', CASE WHEN ta.rejected_at IS NOT NULL THEN true ELSE false END
+            'has_accepted', CASE WHEN ta.accepted_at IS NOT NULL THEN true ELSE false END
           )
         ) FILTER (WHERE u.id IS NOT NULL) as assignees,
         (
           SELECT jsonb_build_object(
             'accepted_at', ta2.accepted_at,
-            'rejected_at', ta2.rejected_at,
-            'has_accepted', CASE WHEN ta2.accepted_at IS NOT NULL THEN true ELSE false END,
-            'has_rejected', CASE WHEN ta2.rejected_at IS NOT NULL THEN true ELSE false END
+            'has_accepted', CASE WHEN ta2.accepted_at IS NOT NULL THEN true ELSE false END
           )
           FROM task_assignees ta2
           WHERE ta2.task_id = t.id AND ta2.user_id = $2
@@ -155,14 +138,14 @@ export const getTask = async (req: AuthRequest, res: Response) => {
         c.id as conversation_id,
         c.name as conversation_name,
         creator.name as creator_name,
-        creator.profile_photo as creator_photo
+        creator.profile_photo_url as creator_photo
       FROM tasks t
       LEFT JOIN task_assignees ta ON t.id = ta.task_id
       LEFT JOIN users u ON ta.user_id = u.id
       LEFT JOIN conversations c ON c.task_id = t.id AND c.is_task_group = TRUE
       LEFT JOIN users creator ON COALESCE(t.created_by, t.creator_id) = creator.id
       WHERE t.id = $1 AND (ta.user_id = $2 OR COALESCE(t.created_by, t.creator_id) = $2)
-      GROUP BY t.id, c.id, c.name, creator.name, creator.profile_photo`,
+      GROUP BY t.id, c.id, c.name, creator.name, creator.profile_photo_url`,
       [id, userId]
     );
 
@@ -175,7 +158,7 @@ export const getTask = async (req: AuthRequest, res: Response) => {
       `SELECT 
         ta.*,
         u.name as user_name,
-        u.profile_photo as user_photo
+        u.profile_photo_url as user_photo
       FROM task_activities ta
       LEFT JOIN users u ON ta.user_id = u.id
       WHERE ta.task_id = $1
@@ -262,9 +245,9 @@ export const createTask = async (req: AuthRequest, res: Response) => {
     const hasOrganizationId = columnCheck.rows.some((r: any) => r.column_name === 'organization_id');
     
     // Build INSERT statement with both columns if they exist
-    let insertColumns = ['title', 'description', 'task_type', 'priority'];
-    let insertValues = [title, description, task_type || 'one_time', priority || 'medium'];
-    let paramIndex = 5;
+    let insertColumns = ['title', 'description', 'task_type'];
+    let insertValues = [title, description, task_type || 'one_time'];
+    let paramIndex = 4;
     
     // Add creator column(s) - set both if both exist
     if (hasCreatedBy && hasCreatorId) {
@@ -403,7 +386,7 @@ export const createTask = async (req: AuthRequest, res: Response) => {
             'id', u.id,
             'name', u.name,
             'phone', u.mobile,
-            'profile_photo', u.profile_photo
+            'profile_photo', u.profile_photo_url
           )
         ) FILTER (WHERE u.id IS NOT NULL) as assignees,
         $1::uuid as conversation_id
@@ -457,7 +440,7 @@ export const acceptTask = async (req: AuthRequest, res: Response) => {
     // Update assignee acceptance
     await client.query(
       `UPDATE task_assignees 
-       SET accepted_at = CURRENT_TIMESTAMP, rejected_at = NULL
+       SET accepted_at = CURRENT_TIMESTAMP
        WHERE task_id = $1 AND user_id = $2`,
       [id, userId]
     );
@@ -573,19 +556,16 @@ export const rejectTask = async (req: AuthRequest, res: Response) => {
       [id]
     );
 
-    // Update assignee rejection
+    // Update assignee rejection - remove acceptance if it was accepted
     await client.query(
       `UPDATE task_assignees 
-       SET rejected_at = CURRENT_TIMESTAMP, accepted_at = NULL
+       SET accepted_at = NULL
        WHERE task_id = $1 AND user_id = $2`,
       [id, userId]
     );
 
-    // Update task rejection reason
-    await client.query(
-      `UPDATE tasks SET rejection_reason = $1, rejected_at = CURRENT_TIMESTAMP WHERE id = $2`,
-      [reason, id]
-    );
+    // Note: task_assignees table doesn't have rejected_at or rejection_reason columns
+    // Rejection is tracked via the task status and task_activities log
 
     // Log activity
     await client.query(
@@ -694,7 +674,7 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
     }
 
     // Build dynamic update query
-    const allowedFields = ['title', 'description', 'priority', 'start_date', 'target_date', 'due_date'];
+    const allowedFields = ['title', 'description', 'start_date', 'target_date', 'due_date'];
     const updateFields: string[] = [];
     const values: any[] = [];
     let paramIndex = 1;

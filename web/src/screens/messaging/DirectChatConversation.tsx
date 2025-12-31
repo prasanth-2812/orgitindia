@@ -107,12 +107,25 @@ export const DirectChatConversation: React.FC = () => {
           const timeB = new Date(b.created_at || 0).getTime();
           return timeA - timeB;
         });
-        setMessages(sorted);
+        
+        // Remove any temp messages when loading from API (they should have been replaced by real messages)
+        const currentUserId = user?.id || user?.userId;
+        const messagesWithoutTemp = sorted.filter(msg => {
+          // Keep real messages and temp messages from other users (shouldn't happen, but safety check)
+          if (!msg.id?.startsWith('temp_')) return true;
+          // Remove temp messages from current user - they should have real messages now
+          if (msg.sender_id === currentUserId || msg.senderId === currentUserId) {
+            console.log('[loadMessages] Removing temp message from loaded data:', msg.id);
+            return false;
+          }
+          return true;
+        });
+        
+        setMessages(messagesWithoutTemp);
         setHasMoreMessages(data.length >= 50);
         
         // Calculate unread count
-        const currentUserId = user?.id || user?.userId;
-        const unread = sorted.filter(
+        const unread = messagesWithoutTemp.filter(
           (msg: any) => {
             const msgSenderId = msg.sender_id || msg.senderId;
             return msgSenderId !== currentUserId && msg.status !== 'read' && !msg.deleted_at;
@@ -219,41 +232,87 @@ export const DirectChatConversation: React.FC = () => {
 
         // Set up message listeners
         const handleNewMessage = (newMsg: any) => {
-          if (newMsg.conversation_id !== conversationId) return;
+          console.log('[handleNewMessage] Received new_message event:', {
+            conversationId: newMsg.conversation_id,
+            messageId: newMsg.id,
+            senderId: newMsg.sender_id || newMsg.senderId,
+            currentConversationId: conversationId,
+            matches: newMsg.conversation_id === conversationId
+          });
+          
+          if (newMsg.conversation_id !== conversationId) {
+            console.log('[handleNewMessage] Skipping - conversation ID mismatch');
+            return;
+          }
           
           const currentUserId = user?.id || user?.userId;
           const isMyMessage = newMsg.sender_id === currentUserId || newMsg.senderId === currentUserId;
           
+          console.log('[handleNewMessage] Processing message:', {
+            messageId: newMsg.id,
+            isMyMessage,
+            currentUserId
+          });
+          
           const normalizedMessage = normalizeMessage(newMsg);
-          if (!normalizedMessage) return;
+          if (!normalizedMessage) {
+            console.log('[handleNewMessage] Failed to normalize message');
+            return;
+          }
 
           setMessages((prev) => {
-            // Check if message already exists
-            if (prev.some(msg => msg.id === normalizedMessage.id)) {
-              return prev.map(msg => 
-                msg.id === normalizedMessage.id ? normalizedMessage : msg
-              );
+            // Check if message already exists by ID (real message from database)
+            const existingIndex = prev.findIndex(msg => msg.id === normalizedMessage.id);
+            if (existingIndex !== -1) {
+              // Update existing message
+              const updated = [...prev];
+              updated[existingIndex] = normalizedMessage;
+              return updated.sort((a, b) => {
+                const timeA = new Date(a.created_at || 0).getTime();
+                const timeB = new Date(b.created_at || 0).getTime();
+                return timeA - timeB;
+              });
             }
             
-            // Check for temp message replacement
-            const tempIndex = prev.findIndex((msg) => {
-              if (!msg.id || !msg.id.startsWith('temp_')) return false;
-              const msgSenderId = msg.sender_id || msg.senderId;
-              const newSenderId = normalizedMessage.sender_id || normalizedMessage.senderId;
-              const sameSender = msgSenderId === newSenderId;
-              const msgContent = (msg.content || '').trim();
-              const newContent = (normalizedMessage.content || '').trim();
-              const sameContent = msgContent === newContent;
-              const msgTime = new Date(msg.created_at || 0).getTime();
-              const newTime = new Date(normalizedMessage.created_at || 0).getTime();
-              const timeDiff = Math.abs(msgTime - newTime);
-              return sameSender && sameContent && timeDiff < 15000;
-            });
+            // Check for temp message replacement (optimistic message should be replaced)
+            const currentUserId = user?.id || user?.userId;
+            const isMyMessage = normalizedMessage.sender_id === currentUserId || normalizedMessage.senderId === currentUserId;
             
-            if (tempIndex !== -1) {
-              const updated = [...prev];
-              updated[tempIndex] = normalizedMessage;
-              updated.sort((a, b) => {
+            if (isMyMessage) {
+              // For our own messages, ALWAYS remove ALL temp messages from this user and add real message
+              // This prevents duplicates - we never want both temp and real messages for our own messages
+              const allTempMessagesFromUser = prev.filter(msg => {
+                if (!msg.id?.startsWith('temp_')) return false;
+                return (msg.sender_id === currentUserId || msg.senderId === currentUserId);
+              });
+              
+              // Remove all temp messages from this user and the real message if it already exists
+              const tempIds = allTempMessagesFromUser.map(m => m.id);
+              const updated = prev
+                .filter(msg => !tempIds.includes(msg.id))
+                .filter(msg => msg.id !== normalizedMessage.id);
+              
+              // Always add the real message
+              updated.push(normalizedMessage);
+              
+              console.log('[handleNewMessage] ✅ Replaced temp messages for own message:', {
+                tempIds,
+                realMessageId: normalizedMessage.id,
+                content: normalizedMessage.content?.substring(0, 50),
+                beforeCount: prev.length,
+                afterCount: updated.length
+              });
+              
+              return updated.sort((a, b) => {
+                const timeA = new Date(a.created_at || 0).getTime();
+                const timeB = new Date(b.created_at || 0).getTime();
+                return timeA - timeB;
+              });
+            }
+            
+            // For other users' messages, add new message (only if it doesn't exist)
+            if (!prev.some(msg => msg.id === normalizedMessage.id)) {
+              const updated = [...prev, normalizedMessage].sort((a, b) => {
                 const timeA = new Date(a.created_at || 0).getTime();
                 const timeB = new Date(b.created_at || 0).getTime();
                 return timeA - timeB;
@@ -261,13 +320,7 @@ export const DirectChatConversation: React.FC = () => {
               return updated;
             }
             
-            // Add new message
-            const updated = [...prev, normalizedMessage].sort((a, b) => {
-              const timeA = new Date(a.created_at || 0).getTime();
-              const timeB = new Date(b.created_at || 0).getTime();
-              return timeA - timeB;
-            });
-            return updated;
+            return prev;
           });
           
           setTimeout(() => scrollToBottom(), 50);
@@ -445,9 +498,36 @@ export const DirectChatConversation: React.FC = () => {
           }, 15000);
         }
 
+        // Cleanup: Remove old temp messages periodically (every 5 seconds)
+        // This ensures temp messages don't persist if socket events fail
+        const tempMessageCleanupInterval = setInterval(() => {
+          setMessages((prev) => {
+            const currentUserId = user?.id || user?.userId;
+            const now = Date.now();
+            const thirtySecondsAgo = now - 30000; // 30 seconds
+            
+            const oldTempMessages = prev.filter(msg => {
+              if (!msg.id?.startsWith('temp_')) return false;
+              if (msg.sender_id !== currentUserId && msg.senderId !== currentUserId) return false;
+              const msgTime = new Date(msg.created_at || 0).getTime();
+              return msgTime < thirtySecondsAgo;
+            });
+            
+            if (oldTempMessages.length > 0) {
+              console.log('[tempMessageCleanup] Removing old temp messages:', oldTempMessages.map(m => m.id));
+              return prev.filter(msg => !oldTempMessages.find(t => t.id === msg.id));
+            }
+            
+            return prev;
+          });
+        }, 5000);
+        
         return () => {
           if (onlineCheckInterval) {
             clearInterval(onlineCheckInterval);
+          }
+          if (tempMessageCleanupInterval) {
+            clearInterval(tempMessageCleanupInterval);
           }
           leaveConversationRoom(conversationId);
           offSocketEvent('new_message', handleNewMessage);
@@ -641,19 +721,14 @@ export const DirectChatConversation: React.FC = () => {
           setTimeout(() => scrollToBottom(), 100);
         }
         
-        // Send via socket
+        // Send via socket only (socket handler will insert to database and emit new_message)
+        // Do NOT call sendMessageMutation here as it causes duplicate messages
         socket.emit('send_message', {
           conversationId,
           text: message.trim(),
           content: message.trim(),
           messageType: 'text',
           replyToMessageId: replyingTo?.id || null,
-        });
-        
-        // Also send via API
-        sendMessageMutation.mutate({
-          content: message.trim(),
-          replyToMessageId: replyingTo?.id,
         });
       }
       

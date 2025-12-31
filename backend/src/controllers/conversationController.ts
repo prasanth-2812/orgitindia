@@ -244,12 +244,12 @@ export const createConversation = async (req: AuthRequest, res: Response) => {
         conversationId = String(convResult.rows[0].id);
 
         await client.query(
-          'INSERT INTO conversation_members (conversation_id, user_id, role, joined_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)',
+          'INSERT INTO conversation_members (conversation_id, user_id, role, added_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)',
           [conversationId, userId, 'member']
         );
 
         await client.query(
-          'INSERT INTO conversation_members (conversation_id, user_id, role, joined_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)',
+          'INSERT INTO conversation_members (conversation_id, user_id, role, added_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)',
           [conversationId, otherUserId, 'member']
         );
 
@@ -609,11 +609,11 @@ export const getConversation = async (req: AuthRequest, res: Response) => {
 
     // Get members with roles
     const membersResult = await query(
-      `SELECT u.id, u.name, u.mobile as phone, COALESCE(u.profile_photo, u.profile_photo_url) as profile_photo, cm.role, cm.joined_at
+      `SELECT u.id, u.name, u.mobile as phone, u.profile_photo_url as profile_photo, cm.role, cm.added_at
        FROM conversation_members cm
        JOIN users u ON cm.user_id = u.id
        WHERE cm.conversation_id = $1
-       ORDER BY cm.role DESC, cm.joined_at ASC`,
+       ORDER BY cm.role DESC, cm.added_at ASC`,
       [conversationId]
     );
 

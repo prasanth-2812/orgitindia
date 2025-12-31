@@ -150,30 +150,48 @@ export const TaskGroupChatConversation: React.FC = () => {
           if (!normalizedMessage) return;
 
           setMessages((prev) => {
-            if (prev.some(msg => msg.id === normalizedMessage.id)) {
-              return prev.map(msg => 
-                msg.id === normalizedMessage.id ? normalizedMessage : msg
-              );
+            // Check if message already exists by ID (real message from database)
+            const existingIndex = prev.findIndex(msg => msg.id === normalizedMessage.id);
+            if (existingIndex !== -1) {
+              // Update existing message
+              const updated = [...prev];
+              updated[existingIndex] = normalizedMessage;
+              return updated.sort((a, b) => {
+                const timeA = new Date(a.created_at || 0).getTime();
+                const timeB = new Date(b.created_at || 0).getTime();
+                return timeA - timeB;
+              });
             }
             
-            const tempIndex = prev.findIndex((msg) => {
-              if (!msg.id || !msg.id.startsWith('temp_')) return false;
-              const msgSenderId = msg.sender_id || msg.senderId;
-              const newSenderId = normalizedMessage.sender_id || normalizedMessage.senderId;
-              const sameSender = msgSenderId === newSenderId;
-              const msgContent = (msg.content || '').trim();
-              const newContent = (normalizedMessage.content || '').trim();
-              const sameContent = msgContent === newContent;
-              const msgTime = new Date(msg.created_at || 0).getTime();
-              const newTime = new Date(normalizedMessage.created_at || 0).getTime();
-              const timeDiff = Math.abs(msgTime - newTime);
-              return sameSender && sameContent && timeDiff < 15000;
-            });
+            // Check for temp message replacement (optimistic message should be replaced)
+            if (isMyMessage) {
+              const currentUserId = user?.id || user?.userId;
+              // For our own messages, ALWAYS remove ALL temp messages from this user and add real message
+              // This prevents duplicates - we never want both temp and real messages for our own messages
+              const allTempMessagesFromUser = prev.filter(msg => {
+                if (!msg.id?.startsWith('temp_')) return false;
+                return (msg.sender_id === currentUserId || msg.senderId === currentUserId);
+              });
+              
+              // Remove all temp messages from this user and the real message if it already exists
+              const tempIds = allTempMessagesFromUser.map(m => m.id);
+              const updated = prev
+                .filter(msg => !tempIds.includes(msg.id))
+                .filter(msg => msg.id !== normalizedMessage.id);
+              
+              // Always add the real message
+              updated.push(normalizedMessage);
+              
+              return updated.sort((a, b) => {
+                const timeA = new Date(a.created_at || 0).getTime();
+                const timeB = new Date(b.created_at || 0).getTime();
+                return timeA - timeB;
+              });
+            }
             
-            if (tempIndex !== -1) {
-              const updated = [...prev];
-              updated[tempIndex] = normalizedMessage;
-              updated.sort((a, b) => {
+            // For other users' messages, add new message (only if it doesn't exist)
+            if (!prev.some(msg => msg.id === normalizedMessage.id)) {
+              const updated = [...prev, normalizedMessage].sort((a, b) => {
                 const timeA = new Date(a.created_at || 0).getTime();
                 const timeB = new Date(b.created_at || 0).getTime();
                 return timeA - timeB;
@@ -181,12 +199,7 @@ export const TaskGroupChatConversation: React.FC = () => {
               return updated;
             }
             
-            const updated = [...prev, normalizedMessage].sort((a, b) => {
-              const timeA = new Date(a.created_at || 0).getTime();
-              const timeB = new Date(b.created_at || 0).getTime();
-              return timeA - timeB;
-            });
-            return updated;
+            return prev;
           });
           
           setTimeout(() => scrollToBottom(), 50);
@@ -508,17 +521,14 @@ export const TaskGroupChatConversation: React.FC = () => {
           setTimeout(() => scrollToBottom(), 100);
         }
         
+        // Send via socket only (socket handler will insert to database and emit new_message)
+        // Do NOT call sendMessageMutation here as it causes duplicate messages
         socket.emit('send_message', {
           conversationId,
           text: message.trim(),
           content: message.trim(),
           messageType: 'text',
           replyToMessageId: replyingTo?.id || null,
-        });
-        
-        sendMessageMutation.mutate({
-          content: message.trim(),
-          replyToMessageId: replyingTo?.id,
         });
       }
       

@@ -177,7 +177,7 @@ export const editMessageHandler = async (req: Request, res: Response) => {
 
     await query(
       `UPDATE messages
-       SET content = $1, edited_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+       SET content = $1, is_edited = true, updated_at = CURRENT_TIMESTAMP
        WHERE id = $2`,
       [content, messageId]
     );
@@ -453,7 +453,7 @@ export const getMessagesByConversationId = async (req: Request, res: Response) =
         m.mime_type,
         m.duration,
         m.reply_to_message_id,
-        m.edited_at,
+        m.updated_at,
         m.deleted_at,
         m.deleted_for_all,
         m.location_lat,
@@ -463,16 +463,16 @@ export const getMessagesByConversationId = async (req: Request, res: Response) =
         COALESCE(ms.status, m.status, 'sent') as status,
         m.created_at,
         u.name as sender_name,
-        COALESCE(u.profile_photo, u.profile_photo_url) as sender_photo,
+        u.profile_photo_url as sender_photo,
         (
-          SELECT json_agg(
+          SELECT COALESCE(json_agg(
             json_build_object(
               'id', mr.id,
               'user_id', mr.user_id,
               'reaction', mr.reaction,
               'user_name', u2.name
             )
-          )
+          ), '[]'::json)
           FROM message_reactions mr
           JOIN users u2 ON mr.user_id = u2.id
           WHERE mr.message_id = m.id
