@@ -171,36 +171,46 @@ const DocumentFillerIntegration: React.FC<{ templateId: string | null; onBack: (
     });
   };
 
-  if (isLoading) return <div className="p-8"><p>Loading template...</p></div>;
+  if (isLoading) {
+    return (
+      <AdminLayout hideHeader>
+        <div className="p-8">
+          <p>Loading template...</p>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex justify-between items-center shrink-0">
-        <div className="flex items-center gap-4">
-          <button onClick={onBack} className="text-gray-500 hover:text-gray-700">
-            <span className="material-symbols-outlined">arrow_back</span>
-          </button>
-          <div>
-            <label className="text-xs text-gray-500 block">Document Title</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="font-bold text-gray-900 border-none p-0 focus:ring-0 w-64"
-            />
+    <AdminLayout hideHeader>
+      <div className="flex flex-col h-full overflow-hidden">
+        <div className="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center shrink-0">
+          <div className="flex items-center gap-4">
+            <button onClick={onBack} className="text-gray-500 hover:text-gray-700">
+              <span className="material-symbols-outlined">arrow_back</span>
+            </button>
+            <div>
+              <label className="text-xs text-gray-500 block">Document Title</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="font-bold text-gray-900 border-none p-0 focus:ring-0 w-64"
+              />
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button onClick={handleSave} disabled={mutation.isLoading}>
+              {mutation.isLoading ? 'Creating...' : 'Create Document'}
+            </Button>
           </div>
         </div>
-        <div className="flex gap-3">
-          <Button onClick={handleSave} disabled={mutation.isLoading}>
-            {mutation.isLoading ? 'Creating...' : 'Create Document'}
-          </Button>
+
+        <div className="flex-1 overflow-hidden">
+          <DocumentBuilderContent />
         </div>
       </div>
-
-      <div className="flex-1 overflow-hidden">
-        <DocumentBuilderContent />
-      </div>
-    </div>
+    </AdminLayout>
   );
 }
 

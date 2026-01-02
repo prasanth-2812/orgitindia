@@ -82,18 +82,18 @@ export const DocumentLibrary: React.FC = () => {
   };
 
   return (
-    <AdminLayout>
+    <AdminLayout
+      headerActions={
+        <button
+          onClick={() => navigate('/admin/documents/create')}
+          className="font-bold rounded-lg transition-all focus:outline-none focus:ring-4 focus:ring-primary/20 active:scale-[0.98] flex items-center justify-center bg-primary text-white shadow-md hover:bg-primary/90 px-5 py-2.5 gap-2"
+        >
+          <span className="material-symbols-outlined">add</span>
+          Create Document
+        </button>
+      }
+    >
       <div className="p-6 md:p-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Document Library</h1>
-            <p className="text-slate-600 mt-1">Manage your documents</p>
-          </div>
-          <Button onClick={() => navigate('/admin/documents/create')}>
-            <span className="material-symbols-outlined mr-2">add</span>
-            Create Document
-          </Button>
-        </div>
 
         {/* Filters */}
         <div className="bg-white rounded-lg border border-slate-200 p-4 mb-6">

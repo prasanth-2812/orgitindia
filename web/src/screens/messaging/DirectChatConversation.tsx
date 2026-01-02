@@ -16,6 +16,9 @@ import { VideoMessage } from '../../components/messaging/VideoMessage';
 import { DocumentMessage } from '../../components/messaging/DocumentMessage';
 import { LocationMessage } from '../../components/messaging/LocationMessage';
 import { VoiceMessage } from '../../components/messaging/VoiceMessage';
+import { MediaUpload } from '../../components/messaging/MediaUpload';
+import { VoiceRecorder } from '../../components/messaging/VoiceRecorder';
+import { LocationPicker } from '../../components/messaging/LocationPicker';
 
 export const DirectChatConversation: React.FC = () => {
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -40,6 +43,14 @@ export const DirectChatConversation: React.FC = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [typing, setTyping] = useState(false);
   const [otherUserId, setOtherUserId] = useState<string | null>(null);
+  const [showMediaUpload, setShowMediaUpload] = useState(false);
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [showMessageSearch, setShowMessageSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Fetch conversation details
   const { data: conversationData } = useQuery(
@@ -90,53 +101,65 @@ export const DirectChatConversation: React.FC = () => {
     };
   };
 
-  // Fetch messages
-  const { data: messagesData, refetch: refetchMessages } = useQuery(
-    ['messages', conversationId],
-    async () => {
-      const response = await messageService.getMessagesByConversationId(conversationId!, 50, 0);
-      const rawMessages = response.messages || response.data || [];
-      return rawMessages.map((msg: any) => normalizeMessage(msg)).filter((msg: any) => msg !== null);
-    },
-    { 
-      enabled: !!conversationId,
-      onSuccess: (data) => {
-        // Sort messages by created_at
-        const sorted = [...data].sort((a, b) => {
-          const timeA = new Date(a.created_at || 0).getTime();
-          const timeB = new Date(b.created_at || 0).getTime();
-          return timeA - timeB;
-        });
-        
-        // Remove any temp messages when loading from API (they should have been replaced by real messages)
-        const currentUserId = user?.id || user?.userId;
-        const messagesWithoutTemp = sorted.filter(msg => {
-          // Keep real messages and temp messages from other users (shouldn't happen, but safety check)
-          if (!msg.id?.startsWith('temp_')) return true;
-          // Remove temp messages from current user - they should have real messages now
-          if (msg.sender_id === currentUserId || msg.senderId === currentUserId) {
-            console.log('[loadMessages] Removing temp message from loaded data:', msg.id);
-            return false;
-          }
-          return true;
-        });
-        
-        setMessages(messagesWithoutTemp);
-        setHasMoreMessages(data.length >= 50);
-        
-        // Calculate unread count
-        const unread = messagesWithoutTemp.filter(
-          (msg: any) => {
-            const msgSenderId = msg.sender_id || msg.senderId;
-            return msgSenderId !== currentUserId && msg.status !== 'read' && !msg.deleted_at;
-          }
-        ).length;
-        setUnreadCount(unread);
-        
-        setTimeout(() => scrollToBottom(), 100);
-      }
+  // Load messages function (matching mobile implementation exactly)
+  const loadMessages = async () => {
+    if (!conversationId) return;
+    
+    try {
+      setLoading(true);
+      const data = await messageService.getMessagesByConversationId(conversationId, 50, 0);
+      console.log('Loaded messages from API:', data.length);
+      
+      // Normalize messages to ensure consistent field names
+      const normalizedMessages = data.map((msg: any) => normalizeMessage(msg)).filter((msg: any) => msg !== null);
+      
+      // Remove any temp messages when loading from API (they should have been replaced by real messages)
+      const currentUserId = user?.id || user?.userId;
+      const messagesWithoutTemp = normalizedMessages.filter((msg: any) => {
+        // Keep real messages and temp messages from other users (shouldn't happen, but safety check)
+        if (!msg.id?.startsWith('temp_')) return true;
+        // Remove temp messages from current user - they should have real messages now
+        if (msg.sender_id === currentUserId || msg.senderId === currentUserId) {
+          console.log('[loadMessages] Removing temp message from loaded data:', msg.id);
+          return false;
+        }
+        return true;
+      });
+      
+      // Sort messages by created_at to ensure correct chronological order
+      messagesWithoutTemp.sort((a: any, b: any) => {
+        const timeA = new Date(a.created_at || 0).getTime();
+        const timeB = new Date(b.created_at || 0).getTime();
+        return timeA - timeB;
+      });
+      
+      console.log('Normalized and sorted messages:', messagesWithoutTemp.length);
+      setMessages(messagesWithoutTemp);
+      setHasMoreMessages(data.length >= 50);
+      
+      // Calculate unread count (messages from other users that are not read)
+      const unread = messagesWithoutTemp.filter(
+        (msg: any) => {
+          const msgSenderId = msg.sender_id || msg.senderId;
+          return msgSenderId !== currentUserId && msg.status !== 'read' && !msg.deleted_at;
+        }
+      ).length;
+      setUnreadCount(unread);
+      
+      setTimeout(() => scrollToBottom(), 100);
+    } catch (error) {
+      console.error('Load messages error:', error);
+    } finally {
+      setLoading(false);
     }
-  );
+  };
+
+  // Load messages when conversationId changes
+  useEffect(() => {
+    if (conversationId) {
+      loadMessages();
+    }
+  }, [conversationId]);
 
   // Check online status function (matching mobile)
   const checkOnlineStatus = async (userId?: string) => {
@@ -199,7 +222,7 @@ export const DirectChatConversation: React.FC = () => {
     }
   );
 
-  // Send message mutation
+  // Send message mutation (for HTTP fallback, but we primarily use socket)
   const sendMessageMutation = useMutation(
     (data: { content: string; replyToMessageId?: string }) => messageService.sendMessage({
       conversationId: conversationId!,
@@ -209,7 +232,8 @@ export const DirectChatConversation: React.FC = () => {
     }),
     {
       onSuccess: () => {
-        refetchMessages();
+        // Messages will be received via socket, no need to refetch
+        queryClient.invalidateQueries(['conversations']);
       }
     }
   );
@@ -856,10 +880,141 @@ export const DirectChatConversation: React.FC = () => {
   };
 
   // Handle forward
-  const handleForward = () => {
-    // TODO: Implement forward functionality
-    setSelectedMessage(null);
+  const handleForward = async () => {
+    if (!selectedMessage) return;
+    
+    try {
+      // For now, just show a message - in future, can open a conversation picker
+      const targetConversationId = prompt('Enter conversation ID to forward to:');
+      if (targetConversationId) {
+        await messageService.forwardMessage(selectedMessage.id, targetConversationId);
+        setSelectedMessage(null);
+      }
+    } catch (error) {
+      console.error('Forward error:', error);
+    }
   };
+
+  // Handle media upload
+  const handleMediaSelect = async (file: File, type: 'image' | 'video' | 'audio' | 'document') => {
+    setUploadingMedia(true);
+    try {
+      let uploadResponse;
+      let messageType: string = type;
+
+      switch (type) {
+        case 'image':
+          uploadResponse = await messageService.uploadImage(file);
+          messageType = 'image';
+          break;
+        case 'video':
+          uploadResponse = await messageService.uploadVideo(file);
+          messageType = 'video';
+          break;
+        case 'audio':
+          uploadResponse = await messageService.uploadAudio(file);
+          messageType = 'audio';
+          break;
+        case 'document':
+          uploadResponse = await messageService.uploadDocument(file);
+          messageType = 'document';
+          break;
+      }
+
+      const mediaUrl = uploadResponse.url || uploadResponse.mediaUrl || uploadResponse.data?.url;
+      if (!mediaUrl) {
+        throw new Error('No media URL returned from upload');
+      }
+
+      // Send message via socket
+      const socket = await waitForSocketConnection();
+      socket.emit('send_message', {
+        conversationId,
+        messageType,
+        mediaUrl,
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type,
+        replyToMessageId: replyingTo?.id || null,
+      });
+
+      setReplyingTo(null);
+    } catch (error) {
+      console.error('Media upload error:', error);
+      alert('Failed to upload media. Please try again.');
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
+
+  // Handle voice note
+  const handleVoiceNoteComplete = async (audioBlob: Blob) => {
+    setUploadingMedia(true);
+    try {
+      // Convert blob to file
+      const audioFile = new File([audioBlob], 'voice-note.webm', { type: 'audio/webm' });
+      const uploadResponse = await messageService.uploadVoiceNote(audioFile);
+      
+      const mediaUrl = uploadResponse.url || uploadResponse.mediaUrl || uploadResponse.data?.url;
+      if (!mediaUrl) {
+        throw new Error('No media URL returned from upload');
+      }
+
+      // Send message via socket
+      const socket = await waitForSocketConnection();
+      socket.emit('send_message', {
+        conversationId,
+        messageType: 'voice_note',
+        mediaUrl,
+        fileName: 'voice-note.webm',
+        fileSize: audioBlob.size,
+        mimeType: 'audio/webm',
+        duration: 0, // Duration will be calculated on backend
+        replyToMessageId: replyingTo?.id || null,
+      });
+
+      setReplyingTo(null);
+    } catch (error) {
+      console.error('Voice note upload error:', error);
+      alert('Failed to upload voice note. Please try again.');
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
+
+  // Handle location share
+  const handleLocationSelect = async (location: { lat: number; lng: number; address?: string }) => {
+    try {
+      const socket = await waitForSocketConnection();
+      socket.emit('send_message', {
+        conversationId,
+        messageType: 'location',
+        locationLat: location.lat,
+        locationLng: location.lng,
+        locationAddress: location.address,
+        replyToMessageId: replyingTo?.id || null,
+      });
+
+      setReplyingTo(null);
+    } catch (error) {
+      console.error('Location share error:', error);
+      alert('Failed to share location. Please try again.');
+    }
+  };
+
+  // Handle message search
+  const handleSearch = async () => {
+    if (!searchQuery.trim() || !conversationId) return;
+
+    try {
+      const response = await messageService.searchMessagesInConversation(conversationId, searchQuery);
+      const results = response.messages || response.data || [];
+      setSearchResults(results.map((msg: any) => normalizeMessage(msg)).filter((msg: any) => msg !== null));
+    } catch (error) {
+      console.error('Search error:', error);
+    }
+  };
+
 
   const loadMoreMessages = async () => {
     if (isLoadingMore || !hasMoreMessages || !conversationId) return;
@@ -934,8 +1089,8 @@ export const DirectChatConversation: React.FC = () => {
       return (
         <div key={msg.id} className="w-full">
           {showDateSeparator && (
-            <div className="flex justify-center py-2">
-              <span className="bg-gray-200/70 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs font-medium px-3 py-1 rounded-full">
+            <div className="flex justify-center">
+              <span className="text-xs font-medium text-gray-400 bg-gray-200 dark:bg-gray-800 px-3 py-1 rounded-full">
                 {formatDate(msg.created_at)}
               </span>
             </div>
@@ -957,42 +1112,22 @@ export const DirectChatConversation: React.FC = () => {
           </div>
         )}
         
-        <div className={`flex items-end gap-3 group ${isMyMessage ? 'justify-end' : ''}`}>
+        <div className={`flex gap-4 max-w-2xl ${isMyMessage ? 'ml-auto flex-row-reverse' : ''}`}>
           {!isMyMessage && (
-            <div 
-              className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-8 shrink-0 mb-1 shadow-sm"
-              style={{ 
-                backgroundImage: conversationPhoto ? `url("${conversationPhoto}")` : 'none',
-                backgroundColor: conversationPhoto ? 'transparent' : '#7C3AED'
-              }}
-            >
-              {!conversationPhoto && (
-                <div className="w-full h-full flex items-center justify-center text-white text-xs font-semibold">
-                  {conversationName.charAt(0).toUpperCase()}
-                </div>
-              )}
-            </div>
+            <img 
+              alt="Avatar" 
+              className="w-10 h-10 rounded-full object-cover self-end"
+              src={conversationPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(conversationName)}&background=A800EB&color=fff`}
+            />
           )}
           
           <div 
-            className={`flex flex-col gap-1 ${isMyMessage ? 'items-end' : 'items-start'} max-w-[80%]`}
+            className={`flex flex-col gap-1 ${isMyMessage ? 'items-end' : 'items-start'}`}
             onContextMenu={(e) => handleMessageContextMenu(e, msg)}
           >
-            {/* Reply Preview */}
-            {msg.reply_to && (
-              <div className="border-l-4 border-primary/50 pl-2 ml-2 mb-1">
-                <p className="text-xs font-semibold text-primary">
-                  {msg.reply_to.sender_name || 'Unknown'}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                  {msg.reply_to.content || `Sent a ${msg.reply_to.message_type}`}
-                </p>
-              </div>
-            )}
-
             {/* Sender name for group chats */}
             {!isMyMessage && ((conversationData?.type === 'group' || conversationData?.is_group) || (conversationData?.isTaskGroup || conversationData?.is_task_group)) && (
-              <span className="text-xs text-gray-500 dark:text-gray-400 font-medium px-1">
+              <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
                 {msg.sender_name || 'Unknown'}
               </span>
             )}
@@ -1025,9 +1160,9 @@ export const DirectChatConversation: React.FC = () => {
 
             {messageType === 'location' && (
               <LocationMessage 
-                latitude={msg.latitude}
-                longitude={msg.longitude}
-                locationName={msg.location_name}
+                latitude={msg.location_lat || msg.latitude}
+                longitude={msg.location_lng || msg.longitude}
+                locationName={msg.location_address || msg.location_name}
                 isMyMessage={isMyMessage}
               />
             )}
@@ -1039,18 +1174,28 @@ export const DirectChatConversation: React.FC = () => {
                 isMyMessage={isMyMessage}
               />
             ) : messageType === 'text' && msg.content && (
-              <div className={`relative px-4 py-3 rounded-2xl shadow-[0_2px_4px_rgba(0,0,0,0.05)] border ${isMyMessage ? 'bg-primary text-white rounded-br-none shadow-primary/20 border-transparent' : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-bl-none border-gray-200 dark:border-gray-700'}`}>
+              <div className={`${isMyMessage ? 'bg-primary text-white p-4 rounded-2xl rounded-br-none shadow-md' : 'bg-white dark:bg-gray-800 p-4 rounded-2xl rounded-bl-none shadow-sm border border-gray-100 dark:border-gray-700'}`}>
+                {msg.reply_to && (
+                  <div className="border-l-4 border-primary/50 pl-2 mb-2">
+                    <p className="text-xs font-semibold text-primary dark:text-primary-light">
+                      {msg.reply_to.sender_name || 'Unknown'}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {msg.reply_to.content || `Sent a ${msg.reply_to.message_type}`}
+                    </p>
+                  </div>
+                )}
                 {msg.edited_at && (
                   <span className="text-[10px] opacity-70 mr-2">Edited</span>
                 )}
-                <p className="text-[15px] font-normal leading-relaxed">{msg.content}</p>
-                <div className={`flex items-center justify-end gap-1 mt-1 ${isMe ? '' : 'absolute bottom-1 right-3'}`}>
-                  <span className={`text-[10px] ${isMe ? 'text-white/80' : 'text-gray-400'}`}>
+                <p className="text-sm text-gray-700 dark:text-gray-200">{msg.content}</p>
+                <div className={`flex items-center gap-1 mt-1 ${isMyMessage ? 'justify-end' : ''}`}>
+                  <span className={`text-[10px] ${isMyMessage ? 'text-white/80' : 'text-gray-400'} ml-1`}>
                     {formatTime(msg.created_at)}
                   </span>
-                  {isMe && statusIcon && (
-                    <span className="text-[12px]" style={{ color: statusColor }}>
-                      {statusIcon}
+                  {isMyMessage && statusIcon && (
+                    <span className="material-icons-round text-[12px]" style={{ color: statusColor }}>
+                      {statusIcon === '✓✓' ? 'done_all' : 'done'}
                     </span>
                   )}
                 </div>
@@ -1074,30 +1219,33 @@ export const DirectChatConversation: React.FC = () => {
   };
 
   return (
-    <div className="bg-background-light dark:bg-background-dark text-text-main dark:text-white font-display antialiased overflow-hidden flex flex-col h-screen w-full max-w-md mx-auto shadow-2xl border-x border-gray-200 dark:border-gray-800">
+    <div className="bg-background-light dark:bg-background-dark text-text-main dark:text-white font-sans antialiased overflow-hidden flex flex-col h-screen w-full">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 bg-surface-light/95 dark:bg-background-dark/95 backdrop-blur-sm z-20 border-b border-gray-200 dark:border-gray-800 shadow-sm transition-colors duration-300">
+      <header className="h-20 border-b border-border-light dark:border-border-dark flex items-center justify-between px-6 bg-white/50 dark:bg-surface-dark/50 backdrop-blur-sm z-10">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="text-gray-500 hover:text-primary transition-colors p-1 -ml-2 dark:text-gray-400">
             <span className="material-symbols-outlined">arrow_back_ios_new</span>
           </button>
           <div className="relative">
             <div 
-              className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border border-gray-200 dark:border-gray-700 shadow-sm"
+              className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-800 to-primary flex items-center justify-center text-white shadow-md"
               style={{ backgroundImage: conversationPhoto ? `url("${conversationPhoto}")` : 'none' }}
             >
-              {!conversationPhoto && (
-                <div className="w-full h-full bg-primary/20 rounded-full flex items-center justify-center">
-                  <span className="text-primary text-lg font-semibold">
-                    {conversationName.charAt(0).toUpperCase()}
-                  </span>
-                </div>
+              {conversationPhoto ? (
+                <img src={conversationPhoto} alt={conversationName} className="w-full h-full rounded-xl object-cover" />
+              ) : (
+                <span className="material-icons-outlined opacity-50 text-xl">person</span>
               )}
             </div>
           </div>
-          <div className="flex flex-col">
-            <h2 className="text-gray-900 dark:text-white text-base font-bold leading-tight">{conversationName}</h2>
-            <span className="text-gray-500 dark:text-gray-400 text-xs font-medium">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              {conversationName}
+              {(conversationData?.isTaskGroup || conversationData?.is_task_group) && (
+                <span className="bg-accent-pink dark:bg-red-900/30 text-accent-text dark:text-red-300 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Urgent</span>
+              )}
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               {isTyping ? (
                 <span className="flex items-center gap-1">
                   <span>typing</span>
@@ -1119,24 +1267,69 @@ export const DirectChatConversation: React.FC = () => {
               ) : (
                 ''
               )}
-            </span>
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-1">
-          <button className="p-2 text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded-full">
-            <span className="material-symbols-outlined text-[24px]">videocam</span>
+        <div className="flex items-center gap-4 text-gray-400">
+          <button 
+            onClick={() => setShowMessageSearch(!showMessageSearch)}
+            className="hover:text-primary transition"
+            title="Search messages"
+          >
+            <span className="material-icons-outlined">search</span>
           </button>
-          <button className="p-2 text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded-full">
-            <span className="material-symbols-outlined text-[24px]">call</span>
+          <button className="hover:text-primary transition">
+            <span className="material-icons-outlined">push_pin</span>
           </button>
-          <button className="p-2 text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded-full">
-            <span className="material-symbols-outlined text-[24px]">info</span>
+          <button className="hover:text-primary transition">
+            <span className="material-icons-outlined">more_vert</span>
           </button>
         </div>
       </header>
 
+      {/* Message Search */}
+      {showMessageSearch && (
+        <div className="px-4 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              placeholder="Search messages..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearch();
+                }
+              }}
+              className="flex-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <button
+              onClick={handleSearch}
+              className="bg-primary hover:bg-primary-dark text-white rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+            >
+              Search
+            </button>
+            <button
+              onClick={() => {
+                setShowMessageSearch(false);
+                setSearchQuery('');
+                setSearchResults([]);
+              }}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+          </div>
+          {searchResults.length > 0 && (
+            <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              Found {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Messages */}
-      <main className="flex-1 overflow-y-auto no-scrollbar p-4 flex flex-col gap-4 bg-[#f8f9fa] dark:bg-[#1c1022]" style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(164, 19, 236, 0.04) 0%, transparent 60%)' }}>
+      <main className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50 dark:bg-[#18181b]">
         {hasMoreMessages && (
           <div className="flex justify-center py-2">
             <button
@@ -1149,7 +1342,7 @@ export const DirectChatConversation: React.FC = () => {
           </div>
         )}
 
-        {messages.length === 0 && !messagesData ? (
+        {loading ? (
           <div className="flex-1 flex items-center justify-center">
             <p className="text-gray-400 text-sm">Loading messages...</p>
           </div>
@@ -1200,21 +1393,25 @@ export const DirectChatConversation: React.FC = () => {
       )}
 
       {/* Footer */}
-      <footer className="bg-surface-light/90 dark:bg-background-dark/90 backdrop-blur-md px-4 py-3 pb-6 border-t border-gray-200 dark:border-gray-800 z-20">
-        <div className="flex items-end gap-3">
+      <div className="p-4 bg-surface-light dark:bg-surface-dark border-t border-border-light dark:border-border-dark">
+        <div className="flex items-end gap-2 max-w-5xl mx-auto">
           <button 
-            className="text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors p-2 rounded-full mb-1"
-            onClick={() => {
-              // TODO: Show attachment menu
-            }}
+            className="p-3 text-gray-400 hover:text-primary transition rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 relative"
+            onClick={() => setShowMediaUpload(true)}
+            disabled={uploadingMedia}
+            title="Attach file"
           >
-            <span className="material-symbols-outlined text-[26px]">add_circle</span>
+            {uploadingMedia ? (
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+            ) : (
+              <span className="material-icons-outlined">add_circle</span>
+            )}
           </button>
-          <div className="flex-1 bg-gray-100 dark:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 rounded-[24px] px-4 py-2 flex items-center gap-2 focus-within:bg-white dark:focus-within:bg-[#2d1b36] focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
-            <input
-              className="bg-transparent border-none text-gray-900 dark:text-white placeholder-gray-400 text-base w-full focus:ring-0 p-0 max-h-24 py-1"
+          <div className="flex-1 bg-gray-100 dark:bg-background-dark rounded-2xl flex items-center p-2">
+            <textarea
+              className="w-full bg-transparent border-none focus:ring-0 text-gray-900 dark:text-gray-100 resize-none max-h-32 placeholder-gray-400 py-2 px-3"
               placeholder={editingMessage ? "Edit message..." : "Type a message..."}
-              type="text"
+              rows={1}
               value={message}
               onChange={(e) => handleTyping(e.target.value)}
               onKeyDown={(e) => {
@@ -1225,28 +1422,30 @@ export const DirectChatConversation: React.FC = () => {
               }}
             />
             <button 
-              className="text-gray-400 hover:text-primary transition-colors p-1"
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
               onClick={() => setShowEmojiPicker(true)}
             >
-              <span className="material-symbols-outlined text-[20px]">sticky_note_2</span>
-            </button>
-          </div>
-          <div className="flex gap-1 mb-1">
-            <button className="text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors p-2 rounded-full">
-              <span className="material-symbols-outlined text-[24px]">photo_camera</span>
+              <span className="material-icons-outlined">sentiment_satisfied</span>
             </button>
             <button 
-              onClick={handleSend} 
-              disabled={(!message.trim() && !replyingTo && !editingMessage) || sendMessageMutation.isLoading}
-              className="bg-primary hover:bg-primary-dark transition-colors text-white rounded-full size-10 flex items-center justify-center shadow-lg shadow-primary/30 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
+              onClick={() => setShowVoiceRecorder(true)}
+              title="Voice note"
             >
-              <span className="material-symbols-outlined text-[20px] ml-0.5">
-                {message.trim() || replyingTo || editingMessage ? 'send' : 'mic'}
-              </span>
+              <span className="material-icons-outlined">mic</span>
             </button>
           </div>
+          <button 
+            onClick={handleSend} 
+            disabled={(!message.trim() && !replyingTo && !editingMessage) || sendMessageMutation.isLoading || uploadingMedia}
+            className="p-3 bg-primary hover:bg-primary-dark text-white rounded-full shadow-lg transition transform active:scale-95 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span className="material-icons-round">
+              {message.trim() || replyingTo || editingMessage ? 'send' : 'mic'}
+            </span>
+          </button>
         </div>
-      </footer>
+      </div>
 
       {/* Message Action Sheet */}
       <MessageActionSheet
@@ -1269,6 +1468,27 @@ export const DirectChatConversation: React.FC = () => {
         visible={showEmojiPicker}
         onSelect={handleReaction}
         onClose={() => setShowEmojiPicker(false)}
+      />
+
+      {/* Media Upload */}
+      <MediaUpload
+        visible={showMediaUpload}
+        onSelect={handleMediaSelect}
+        onClose={() => setShowMediaUpload(false)}
+      />
+
+      {/* Voice Recorder */}
+      <VoiceRecorder
+        visible={showVoiceRecorder}
+        onRecordComplete={handleVoiceNoteComplete}
+        onClose={() => setShowVoiceRecorder(false)}
+      />
+
+      {/* Location Picker */}
+      <LocationPicker
+        visible={showLocationPicker}
+        onLocationSelect={handleLocationSelect}
+        onClose={() => setShowLocationPicker(false)}
       />
 
       <BottomNav />

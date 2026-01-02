@@ -127,7 +127,17 @@ export const MessageActionSheet: React.FC<MessageActionSheetProps> = ({
                 className="w-full flex items-center gap-4 px-6 py-4 hover:bg-gray-100 dark:hover:bg-gray-700 text-left text-base text-red-600 dark:text-red-400"
               >
                 <span className="material-symbols-outlined text-2xl">delete</span>
-                <span>Delete</span>
+                <span>Delete for me</span>
+              </button>
+              <button
+                onClick={() => {
+                  onDelete(true);
+                  onClose();
+                }}
+                className="w-full flex items-center gap-4 px-6 py-4 hover:bg-gray-100 dark:hover:bg-gray-700 text-left text-base text-red-600 dark:text-red-400"
+              >
+                <span className="material-symbols-outlined text-2xl">delete_forever</span>
+                <span>Delete for everyone</span>
               </button>
             </>
           )}

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService } from '../services/authService';
+import { initSocket, disconnectSocket } from '../services/socketService';
 
 interface User {
   id: string;
@@ -35,6 +36,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           const response = await authService.getCurrentUser();
           if (response.success && response.data) {
             setUser(response.data);
+            // Initialize socket connection if user is authenticated
+            try {
+              initSocket(token);
+            } catch (error) {
+              console.error('Failed to initialize socket:', error);
+            }
           }
         } catch (error) {
           console.error('Failed to get current user:', error);
@@ -52,12 +59,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.setItem('token', token);
     localStorage.setItem('refreshToken', refreshToken);
     setUser(userData);
+    // Initialize socket connection when user logs in
+    try {
+      initSocket(token);
+    } catch (error) {
+      console.error('Failed to initialize socket:', error);
+    }
   };
 
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
     setUser(null);
+    // Disconnect socket on logout
+    try {
+      disconnectSocket();
+    } catch (error) {
+      console.error('Failed to disconnect socket:', error);
+    }
   };
 
   const updateUser = (userData: User) => {

@@ -78,6 +78,7 @@ export const messageService = {
 
   /**
    * Get messages by conversationId (supports both UUID and "direct_<userId>" format)
+   * Matches mobile implementation with proper fallback handling
    */
   getMessagesByConversationId: async (conversationId: string, limit = 50, offset = 0) => {
     const params = new URLSearchParams({
@@ -85,7 +86,20 @@ export const messageService = {
       offset: offset.toString(),
     });
     const response = await api.get(`/messages/${conversationId}?${params.toString()}`);
-    return response.data;
+    
+    // Backend returns: { messages: [...] } (no success field)
+    if (response.data && response.data.messages) {
+      return response.data.messages;
+    }
+    // Fallback for old format
+    if (response.data && response.data.success && response.data.messages) {
+      return response.data.messages;
+    }
+    // Another fallback
+    if (response.data && response.data.data) {
+      return response.data.data;
+    }
+    return [];
   },
 
   /**
@@ -141,6 +155,76 @@ export const messageService = {
    */
   getStarredMessages: async () => {
     const response = await api.get('/messages/starred/all');
+    return response.data;
+  },
+
+  /**
+   * Upload image file
+   */
+  uploadImage: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/messages/upload/image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  /**
+   * Upload video file
+   */
+  uploadVideo: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/messages/upload/video', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  /**
+   * Upload audio file
+   */
+  uploadAudio: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/messages/upload/audio', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  /**
+   * Upload document file
+   */
+  uploadDocument: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/messages/upload/document', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  /**
+   * Upload voice note
+   */
+  uploadVoiceNote: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/messages/upload/voice-note', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 };

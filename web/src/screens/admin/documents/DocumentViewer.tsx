@@ -46,34 +46,36 @@ const DocumentEditorIntegration: React.FC<{ instance: any, id: string, onBack: (
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex justify-between items-center shrink-0">
-        <div className="flex items-center gap-4">
-          <button onClick={onBack} className="text-gray-500 hover:text-gray-700 transition-colors">
-            <span className="material-symbols-outlined">arrow_back</span>
-          </button>
-          <div>
-            <label className="text-[10px] font-bold text-gray-400 uppercase block">Document Title</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="font-bold text-gray-900 border-none p-0 focus:ring-0 w-64 text-lg"
-            />
+    <AdminLayout hideHeader>
+      <div className="flex flex-col h-full overflow-hidden">
+        <div className="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center shrink-0">
+          <div className="flex items-center gap-4">
+            <button onClick={onBack} className="text-gray-500 hover:text-gray-700 transition-colors">
+              <span className="material-symbols-outlined">arrow_back</span>
+            </button>
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase block">Document Title</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="font-bold text-gray-900 border-none p-0 focus:ring-0 w-64 text-lg"
+              />
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={onBack}>Cancel</Button>
+            <Button onClick={handleSave} disabled={mutation.isLoading}>
+              {mutation.isLoading ? 'Saving...' : 'Save Changes'}
+            </Button>
           </div>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={onBack}>Cancel</Button>
-          <Button onClick={handleSave} disabled={mutation.isLoading}>
-            {mutation.isLoading ? 'Saving...' : 'Save Changes'}
-          </Button>
+
+        <div className="flex-1 overflow-hidden">
+          <DocumentBuilderContent />
         </div>
       </div>
-
-      <div className="flex-1 overflow-hidden">
-        <DocumentBuilderContent />
-      </div>
-    </div>
+    </AdminLayout>
   );
 };
 
