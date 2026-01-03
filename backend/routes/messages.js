@@ -349,16 +349,101 @@ router.put('/:conversationId/read', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Not a member of this conversation' });
     }
 
-    // Mark all unread messages as read
-    await pool.query(
-      `UPDATE messages 
-       SET status = 'read' 
-       WHERE conversation_id = $1 
-       AND sender_id != $2 
-       AND status != 'read'
-       AND deleted_at IS NULL`,
-      [conversationId, userId]
+    // Check if this is a group conversation
+    const convInfoResult = await pool.query(
+      `SELECT is_group, is_task_group FROM conversations WHERE id = $1`,
+      [conversationId]
     );
+    const isGroup = convInfoResult.rows[0]?.is_group || convInfoResult.rows[0]?.is_task_group || false;
+
+    if (isGroup) {
+      // Group chat: Only update message_status table, NOT messages.status
+      // Get all unread messages for this user in this conversation
+      const unreadMessages = await pool.query(
+        `SELECT m.id 
+         FROM messages m
+         LEFT JOIN message_status ms ON m.id = ms.message_id AND ms.user_id = $2
+         WHERE m.conversation_id = $1 
+         AND m.sender_id != $2 
+         AND (ms.status IS NULL OR ms.status != 'read')
+         AND m.is_deleted = false
+         AND m.deleted_at IS NULL`,
+        [conversationId, userId]
+      );
+      
+      // Update message_status table for each unread message
+      for (const msg of unreadMessages.rows) {
+        try {
+          await pool.query(
+            `INSERT INTO message_status (message_id, user_id, status, status_at)
+             VALUES ($1, $2, 'read', NOW())
+             ON CONFLICT (message_id, user_id) 
+             DO UPDATE SET status = 'read', status_at = NOW()`,
+            [msg.id, userId]
+          );
+        } catch (error) {
+          // If error is about column name, try with created_at
+          if (error.message && error.message.includes('created_at')) {
+            await pool.query(
+              `INSERT INTO message_status (message_id, user_id, status, created_at)
+               VALUES ($1, $2, 'read', NOW())
+               ON CONFLICT (message_id, user_id) 
+               DO UPDATE SET status = 'read', updated_at = NOW()`,
+              [msg.id, userId]
+            );
+          } else {
+            console.warn('[markMessagesAsRead] Could not update message_status table:', error.message);
+          }
+        }
+      }
+    } else {
+      // Direct chat: Update both messages.status and message_status table
+      await pool.query(
+        `UPDATE messages 
+         SET status = 'read' 
+         WHERE conversation_id = $1 
+         AND sender_id != $2 
+         AND status != 'read'
+         AND deleted_at IS NULL`,
+        [conversationId, userId]
+      );
+      
+      // Get all updated message IDs
+      const updatedMessages = await pool.query(
+        `SELECT id FROM messages 
+         WHERE conversation_id = $1 
+         AND sender_id != $2 
+         AND status = 'read'
+         AND deleted_at IS NULL`,
+        [conversationId, userId]
+      );
+      
+      // Update message_status table for each message
+      for (const msg of updatedMessages.rows) {
+        try {
+          await pool.query(
+            `INSERT INTO message_status (message_id, user_id, status, status_at)
+             VALUES ($1, $2, 'read', NOW())
+             ON CONFLICT (message_id, user_id) 
+             DO UPDATE SET status = 'read', status_at = NOW()`,
+            [msg.id, userId]
+          );
+        } catch (error) {
+          // If error is about column name, try with created_at
+          if (error.message && error.message.includes('created_at')) {
+            await pool.query(
+              `INSERT INTO message_status (message_id, user_id, status, created_at)
+               VALUES ($1, $2, 'read', NOW())
+               ON CONFLICT (message_id, user_id) 
+               DO UPDATE SET status = 'read', updated_at = NOW()`,
+              [msg.id, userId]
+            );
+          } else {
+            console.warn('[markMessagesAsRead] Could not update message_status table:', error.message);
+          }
+        }
+      }
+    }
 
     res.json({ success: true });
   } catch (error) {

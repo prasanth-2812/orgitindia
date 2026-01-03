@@ -686,26 +686,52 @@ export const setupMessageHandlers = (io: Server) => {
             });
           }
         } else if (conversationId) {
-          // Mark all unread messages in conversation as read
-          await query(
-            `UPDATE messages 
-             SET status = 'read' 
-             WHERE conversation_id::text = $1::text 
-             AND sender_id != $2 
-             AND status != 'read'
-             AND deleted_at IS NULL`,
-            [conversationId, userId]
+          // Check if this is a group conversation
+          const convInfoResult = await query(
+            `SELECT is_group, is_task_group FROM conversations WHERE id::text = $1::text`,
+            [conversationId]
           );
+          const isGroup = convInfoResult.rows[0]?.is_group || convInfoResult.rows[0]?.is_task_group || false;
 
-          // Also update message_status table
-          const unreadMessages = await query(
-            `SELECT id FROM messages 
-             WHERE conversation_id::text = $1::text 
-             AND sender_id != $2 
-             AND status = 'read'
-             AND is_deleted = false`,
-            [conversationId, userId]
-          );
+          // For group chats, only update message_status table (per-user status)
+          // For direct chats, update both messages.status and message_status table
+          let unreadMessages;
+          
+          if (isGroup) {
+            // Group chat: Only update message_status table, NOT messages.status
+            // Get all unread messages for this user in this conversation
+            unreadMessages = await query(
+              `SELECT m.id 
+               FROM messages m
+               LEFT JOIN message_status ms ON m.id = ms.message_id AND ms.user_id = $2
+               WHERE m.conversation_id::text = $1::text 
+               AND m.sender_id != $2 
+               AND (ms.status IS NULL OR ms.status != 'read')
+               AND m.is_deleted = false
+               AND m.deleted_at IS NULL`,
+              [conversationId, userId]
+            );
+          } else {
+            // Direct chat: Update both messages.status and message_status table
+            await query(
+              `UPDATE messages 
+               SET status = 'read' 
+               WHERE conversation_id::text = $1::text 
+               AND sender_id != $2 
+               AND status != 'read'
+               AND deleted_at IS NULL`,
+              [conversationId, userId]
+            );
+
+            unreadMessages = await query(
+              `SELECT id FROM messages 
+               WHERE conversation_id::text = $1::text 
+               AND sender_id != $2 
+               AND status = 'read'
+               AND is_deleted = false`,
+              [conversationId, userId]
+            );
+          }
 
           for (const msg of unreadMessages.rows) {
             // CRITICAL FIX: message_status table might use 'status_at' instead of 'created_at'

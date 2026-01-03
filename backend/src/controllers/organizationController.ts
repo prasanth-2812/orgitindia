@@ -58,6 +58,86 @@ export async function getOrganizationById(req: AuthRequest, res: Response) {
 }
 
 /**
+ * Create organization for admin (if they don't have one)
+ */
+export async function createAdminOrganization(req: AuthRequest, res: Response) {
+  try {
+    const userId = req.user?.userId;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+      });
+    }
+
+    // Check if admin already has an organization
+    const existingOrg = await query(
+      `SELECT organization_id FROM user_organizations WHERE user_id = $1 LIMIT 1`,
+      [userId]
+    );
+
+    if (existingOrg.rows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'You already have an organization. Use update endpoint to modify it.',
+      });
+    }
+
+    const {
+      name,
+      logoUrl,
+      address,
+      email,
+      mobile,
+      gst,
+      pan,
+      cin,
+      accountingYearStart,
+    } = req.body;
+
+    if (!name || name.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Organization name is required',
+      });
+    }
+
+    // Create organization
+    const organization = await organizationService.createOrganization({
+      name,
+      logoUrl,
+      address,
+      email,
+      mobile,
+      gst,
+      pan,
+      cin,
+      accountingYearStart,
+    });
+
+    // Link admin to the organization
+    await query(
+      `INSERT INTO user_organizations (id, user_id, organization_id, created_at)
+       VALUES (gen_random_uuid(), $1, $2, CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id, organization_id) DO NOTHING`,
+      [userId, organization.id]
+    );
+
+    res.status(201).json({
+      success: true,
+      data: organization,
+    });
+  } catch (error: any) {
+    console.error('Error creating admin organization:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to create organization',
+    });
+  }
+}
+
+/**
  * Get admin's own organization
  */
 export async function getAdminOrganization(req: AuthRequest, res: Response) {

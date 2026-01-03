@@ -85,15 +85,18 @@ const ChatScreen = ({ route, navigation }) => {
 
     const unsubscribe = navigation.addListener('focus', async () => {
       // Mark all messages as read when chat screen is focused
-      markMessagesAsRead(conversationId);
-      // Emit read receipt for all unread messages
       try {
+        // Call API endpoint first (it will update database and emit socket events)
+        await markMessagesAsRead(conversationId);
+        
+        // Also emit socket event to ensure backend processes it correctly
+        // (Backend API already emits, but this ensures real-time updates)
         const socket = await waitForSocketConnection();
-      socket.emit('message_read', {
-        conversationId,
-      });
+        socket.emit('message_read', {
+          conversationId,
+        });
       } catch (error) {
-        console.error('Error emitting message_read:', error);
+        console.error('Error marking messages as read:', error);
       }
       // Clear unread count when screen is focused (messages are being read)
       setUnreadCount(0);
@@ -457,13 +460,19 @@ const ChatScreen = ({ route, navigation }) => {
         // Note: currentUserId is already declared above in the socket.on handler
         if (normalizedMessage.sender_id !== currentUserId) {
           // CRITICAL FIX: Mark as read immediately for real-time status updates
-          setTimeout(() => {
-            markMessagesAsRead(conversationId).catch(err => console.error('Mark as read error:', err));
-            // Emit read receipt for this specific message
-            socket.emit('message_read', {
-              messageId: normalizedMessage.id,
-              conversationId,
-            });
+          setTimeout(async () => {
+            try {
+              // Call API endpoint first (it will update database and emit socket events)
+              await markMessagesAsRead(conversationId);
+              
+              // Also emit socket event to ensure backend processes it correctly
+              socket.emit('message_read', {
+                messageId: normalizedMessage.id,
+                conversationId,
+              });
+            } catch (err) {
+              console.error('Mark as read error:', err);
+            }
           }, 300);
         } else {
           // For own messages, status will be updated via message_status_update event
@@ -748,6 +757,25 @@ const ChatScreen = ({ route, navigation }) => {
         }
       ).length;
       setUnreadCount(unread);
+      
+      // Mark messages as read when they're loaded (user is viewing the chat)
+      if (unread > 0) {
+        setTimeout(async () => {
+          try {
+            // Call API endpoint first (it will update database and emit socket events)
+            await markMessagesAsRead(conversationId);
+            
+            // Also emit socket event to ensure backend processes it correctly
+            const socket = await waitForSocketConnection();
+            socket.emit('message_read', {
+              conversationId,
+            });
+          } catch (error) {
+            console.error('Error marking messages as read after load:', error);
+          }
+        }, 500);
+      }
+      
       setTimeout(() => scrollToBottom(), 100);
     } catch (error) {
       console.error('Load messages error:', error);

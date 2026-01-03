@@ -59,7 +59,8 @@ router.put('/users/:id/role', authenticate, requireSuperAdmin, async (req: any, 
     }
 });
 
-// Admin organization management - allows admins to update their own organization
+// Admin organization management - allows admins to create/update their own organization
+router.post('/organization', authenticate, isAdminOrSuperAdmin, organizationController.createAdminOrganization);
 router.get('/organization', authenticate, isAdminOrSuperAdmin, requireOrganization, organizationController.getAdminOrganization);
 router.put('/organization', authenticate, isAdminOrSuperAdmin, requireOrganization, organizationController.updateAdminOrganization);
 

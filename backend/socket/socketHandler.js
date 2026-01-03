@@ -262,26 +262,105 @@ const handleSocketConnection = (io) => {
             });
           }
         } else if (conversationId) {
-          // Mark all unread messages in conversation as read
-          await pool.query(
-            `UPDATE messages 
-             SET status = 'read' 
-             WHERE conversation_id = $1 
-             AND sender_id != $2 
-             AND status != 'read'
-             AND deleted_at IS NULL`,
-            [conversationId, socket.userId]
+          // Check if this is a group conversation
+          const convInfoResult = await pool.query(
+            `SELECT is_group, is_task_group FROM conversations WHERE id = $1`,
+            [conversationId]
           );
+          const isGroup = convInfoResult.rows[0]?.is_group || convInfoResult.rows[0]?.is_task_group || false;
 
-          // Get all updated message IDs and emit status updates
-          const updatedMessages = await pool.query(
-            `SELECT id FROM messages 
-             WHERE conversation_id = $1 
-             AND sender_id != $2 
-             AND status = 'read'
-             AND deleted_at IS NULL`,
-            [conversationId, socket.userId]
-          );
+          // For group chats, only update message_status table (per-user status)
+          // For direct chats, update both messages.status and message_status table
+          let updatedMessages;
+          
+          if (isGroup) {
+            // Group chat: Only update message_status table, NOT messages.status
+            // Get all unread messages for this user in this conversation
+            updatedMessages = await pool.query(
+              `SELECT m.id 
+               FROM messages m
+               LEFT JOIN message_status ms ON m.id = ms.message_id AND ms.user_id = $2
+               WHERE m.conversation_id = $1 
+               AND m.sender_id != $2 
+               AND (ms.status IS NULL OR ms.status != 'read')
+               AND m.is_deleted = false
+               AND m.deleted_at IS NULL`,
+              [conversationId, socket.userId]
+            );
+            
+            // Update message_status table for each unread message
+            for (const msg of updatedMessages.rows) {
+              try {
+                await pool.query(
+                  `INSERT INTO message_status (message_id, user_id, status, status_at)
+                   VALUES ($1, $2, 'read', NOW())
+                   ON CONFLICT (message_id, user_id) 
+                   DO UPDATE SET status = 'read', status_at = NOW()`,
+                  [msg.id, socket.userId]
+                );
+              } catch (error) {
+                // If error is about column name, try with created_at
+                if (error.message && error.message.includes('created_at')) {
+                  await pool.query(
+                    `INSERT INTO message_status (message_id, user_id, status, created_at)
+                     VALUES ($1, $2, 'read', NOW())
+                     ON CONFLICT (message_id, user_id) 
+                     DO UPDATE SET status = 'read', updated_at = NOW()`,
+                    [msg.id, socket.userId]
+                  );
+                } else {
+                  console.warn('[message_read] Could not update message_status table:', error.message);
+                }
+              }
+            }
+          } else {
+            // Direct chat: Update both messages.status and message_status table
+            await pool.query(
+              `UPDATE messages 
+               SET status = 'read' 
+               WHERE conversation_id = $1 
+               AND sender_id != $2 
+               AND status != 'read'
+               AND deleted_at IS NULL`,
+              [conversationId, socket.userId]
+            );
+
+            // Get all updated message IDs
+            updatedMessages = await pool.query(
+              `SELECT id FROM messages 
+               WHERE conversation_id = $1 
+               AND sender_id != $2 
+               AND status = 'read'
+               AND deleted_at IS NULL`,
+              [conversationId, socket.userId]
+            );
+            
+            // Update message_status table for each message
+            for (const msg of updatedMessages.rows) {
+              try {
+                await pool.query(
+                  `INSERT INTO message_status (message_id, user_id, status, status_at)
+                   VALUES ($1, $2, 'read', NOW())
+                   ON CONFLICT (message_id, user_id) 
+                   DO UPDATE SET status = 'read', status_at = NOW()`,
+                  [msg.id, socket.userId]
+                );
+              } catch (error) {
+                // If error is about column name, try with created_at
+                if (error.message && error.message.includes('created_at')) {
+                  await pool.query(
+                    `INSERT INTO message_status (message_id, user_id, status, created_at)
+                     VALUES ($1, $2, 'read', NOW())
+                     ON CONFLICT (message_id, user_id) 
+                     DO UPDATE SET status = 'read', updated_at = NOW()`,
+                    [msg.id, socket.userId]
+                  );
+                } else {
+                  console.warn('[message_read] Could not update message_status table:', error.message);
+                }
+              }
+            }
+          }
 
           // Get conversation members to emit to their personal rooms
           const convMembers = await pool.query(

@@ -28,6 +28,19 @@ import DocumentScreen from './screens/DocumentScreen';
 import ComplianceScreen from './screens/ComplianceScreen';
 import SettingsScreen from './screens/SettingsScreen';
 
+// Settings Screens
+import ProfileSettings from './screens/settings/ProfileSettings';
+import ChangePassword from './screens/settings/ChangePassword';
+import ThemeSettings from './screens/settings/ThemeSettings';
+
+// Admin Settings Screens
+import EntityMasterData from './screens/settings/admin/EntityMasterData';
+import ReminderConfig from './screens/settings/admin/ReminderConfig';
+import PlaceholderScreen from './screens/settings/admin/PlaceholderScreen';
+import Departments from './screens/settings/admin/Departments';
+import Designations from './screens/settings/admin/Designations';
+import AddEmployee from './screens/settings/admin/AddEmployee';
+
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
@@ -198,6 +211,33 @@ const RootNavigator = () => {
       <Stack.Screen name="MainTabs" component={MainTabs} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="UserProfile" component={UserProfileScreen} />
+      
+      {/* Common Settings */}
+      <Stack.Screen name="ProfileSettings" component={ProfileSettings} />
+      <Stack.Screen name="ChangePassword" component={ChangePassword} />
+      <Stack.Screen name="ThemeSettings" component={ThemeSettings} />
+      
+      {/* Admin Settings */}
+      <Stack.Screen name="EntityMasterData" component={EntityMasterData} />
+      <Stack.Screen name="Departments" component={Departments} />
+      <Stack.Screen name="Designations" component={Designations} />
+      <Stack.Screen name="ReportingHierarchy">
+        {(props) => <PlaceholderScreen {...props} title="Reporting Hierarchy" />}
+      </Stack.Screen>
+      <Stack.Screen name="AddEmployee" component={AddEmployee} />
+      <Stack.Screen name="EmployeeDirectory">
+        {(props) => <PlaceholderScreen {...props} title="Employee Directory" />}
+      </Stack.Screen>
+      <Stack.Screen name="RolesPermissions">
+        {(props) => <PlaceholderScreen {...props} title="Roles & Permissions" />}
+      </Stack.Screen>
+      <Stack.Screen name="ReminderConfig" component={ReminderConfig} />
+      <Stack.Screen name="AutoEscalation">
+        {(props) => <PlaceholderScreen {...props} title="Auto Escalation" />}
+      </Stack.Screen>
+      <Stack.Screen name="RecurringTasks">
+        {(props) => <PlaceholderScreen {...props} title="Recurring Tasks" />}
+      </Stack.Screen>
     </Stack.Navigator>
   );
 

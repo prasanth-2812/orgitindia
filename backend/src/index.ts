@@ -135,6 +135,14 @@ app.use('/api/super-admin/settings', platformSettingsRoutes);
 import adminRoutes from './routes/adminRoutes';
 app.use('/api/admin', adminRoutes);
 
+// Admin routes for departments, designations, and employees
+import departmentRoutes from './routes/departmentRoutes';
+import designationRoutes from './routes/designationRoutes';
+import employeeRoutes from './routes/employeeRoutes';
+app.use('/api/admin/departments', departmentRoutes);
+app.use('/api/admin/designations', designationRoutes);
+app.use('/api/admin/employees', employeeRoutes);
+
 // Compliance Routes (accessible by both Super Admin and Admin)
 app.use('/api/compliance', complianceRoutes);
 

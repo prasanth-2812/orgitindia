@@ -28,33 +28,21 @@ export const authenticate = async (
 
     const token = authHeader.substring(7);
 
-    // Verify token
+    // Verify token (no session storage - token validation is sufficient)
     const decoded = verifyToken(token);
 
-    // Check if session is still active
-    const sessionResult = await query(
-      `SELECT is_active, expires_at FROM sessions 
-       WHERE user_id = $1 AND token = $2 AND is_active = true`,
-      [decoded.userId, token]
+    // Get user's organization from database if needed
+    const orgResult = await query(
+      `SELECT organization_id FROM user_organizations WHERE user_id = $1 LIMIT 1`,
+      [decoded.userId]
     );
+    const organizationId = orgResult.rows.length > 0 ? orgResult.rows[0].organization_id : undefined;
 
-    if (sessionResult.rows.length === 0) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid or expired session',
-      });
-    }
-
-    const session = sessionResult.rows[0];
-    if (new Date(session.expires_at) < new Date()) {
-      return res.status(401).json({
-        success: false,
-        error: 'Session expired',
-      });
-    }
-
-    // Attach user info to request
-    req.user = decoded;
+    // Attach user info to request (organizationId fetched from DB, not from token)
+    req.user = {
+      ...decoded,
+      organizationId,
+    };
 
     next();
   } catch (error: any) {

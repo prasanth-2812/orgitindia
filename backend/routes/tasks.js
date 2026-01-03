@@ -265,11 +265,36 @@ router.post('/', authenticateToken, async (req, res) => {
     );
 
     // Create auto-generated message in task group
-    await client.query(
-      `INSERT INTO messages (conversation_id, sender_id, content, message_type)
-       VALUES ($1, $2, $3, 'text')`,
+    const messageResult = await client.query(
+      `INSERT INTO messages (conversation_id, sender_id, content, message_type, status)
+       VALUES ($1, $2, $3, 'text', 'sent')
+       RETURNING id`,
       [conversation.id, userId, `Task group auto-created by ${req.user.name || 'Admin'}`]
     );
+    
+    const messageId = messageResult.rows[0].id;
+    
+    // Create message_status entry for the sender
+    // Check if message_status table uses status_at or created_at
+    try {
+      await client.query(
+        `INSERT INTO message_status (message_id, user_id, status, status_at)
+         VALUES ($1, $2, 'sent', NOW())`,
+        [messageId, userId]
+      );
+    } catch (error) {
+      // If error is about column name, try with created_at
+      if (error.message && error.message.includes('created_at')) {
+        await client.query(
+          `INSERT INTO message_status (message_id, user_id, status, created_at)
+           VALUES ($1, $2, 'sent', NOW())`,
+          [messageId, userId]
+        );
+      } else {
+        // If message_status table doesn't exist or has different structure, log warning
+        console.warn('[createTask] Could not create message_status entry:', error.message);
+      }
+    }
 
     await client.query('COMMIT');
 

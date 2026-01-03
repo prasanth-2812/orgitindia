@@ -154,52 +154,20 @@ export const verifyOTPAndLogin = async (req: Request, res: Response) => {
       organizationId = orgResult.rows[0].organization_id;
     }
 
-    // Generate tokens
+    // Generate tokens (no organizationId in token, stored in local storage on client)
     const token = generateToken({
       userId: user.id,
       mobile: user.mobile,
       role: user.role,
-      organizationId,
     });
 
     const refreshToken = generateRefreshToken({
       userId: user.id,
       mobile: user.mobile,
       role: user.role,
-      organizationId,
     });
 
-    // Create or update session (always create session for authentication middleware)
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
-
-    // Use provided deviceId/deviceType or generate defaults
-    const finalDeviceId = deviceId || `default-${user.id}`;
-    const finalDeviceType = deviceType || 'mobile';
-
-    // Check if session exists
-    const sessionResult = await query(
-      `SELECT id FROM sessions 
-       WHERE user_id = $1 AND device_id = $2 AND is_active = true`,
-      [user.id, finalDeviceId]
-    );
-
-    if (sessionResult.rows.length > 0) {
-      // Update existing session
-      await query(
-        `UPDATE sessions 
-         SET token = $1, refresh_token = $2, expires_at = $3, last_activity = NOW()
-         WHERE id = $4`,
-        [token, refreshToken, expiresAt, sessionResult.rows[0].id]
-      );
-    } else {
-      // Create new session
-      await query(
-        `INSERT INTO sessions (id, user_id, device_id, device_type, token, refresh_token, expires_at, is_active)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, true)`,
-        [user.id, finalDeviceId, finalDeviceType, token, refreshToken, expiresAt]
-      );
-    }
+    // No session storage in database - tokens stored in local storage on client
 
     res.json({
       success: true,
@@ -316,52 +284,20 @@ export const loginWithPassword = async (req: Request, res: Response) => {
       organizationId = orgResult.rows[0].organization_id;
     }
 
-    // Generate tokens
+    // Generate tokens (no organizationId in token, stored in local storage on client)
     const token = generateToken({
       userId: user.id,
       mobile: user.mobile,
       role: user.role,
-      organizationId,
     });
 
     const refreshToken = generateRefreshToken({
       userId: user.id,
       mobile: user.mobile,
       role: user.role,
-      organizationId,
     });
 
-    // Create or update session (always create session for authentication middleware)
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
-
-    // Use provided deviceId/deviceType or generate defaults
-    const finalDeviceId = deviceId || `default-${user.id}`;
-    const finalDeviceType = deviceType || 'mobile';
-
-    // Check if session exists
-    const sessionResult = await query(
-      `SELECT id FROM sessions 
-       WHERE user_id = $1 AND device_id = $2 AND is_active = true`,
-      [user.id, finalDeviceId]
-    );
-
-    if (sessionResult.rows.length > 0) {
-      // Update existing session
-      await query(
-        `UPDATE sessions 
-         SET token = $1, refresh_token = $2, expires_at = $3, last_activity = NOW()
-         WHERE id = $4`,
-        [token, refreshToken, expiresAt, sessionResult.rows[0].id]
-      );
-    } else {
-      // Create new session
-      await query(
-        `INSERT INTO sessions (id, user_id, device_id, device_type, token, refresh_token, expires_at, is_active)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, true)`,
-        [user.id, finalDeviceId, finalDeviceType, token, refreshToken, expiresAt]
-      );
-    }
+    // No session storage in database - tokens stored in local storage on client
 
     res.json({
       success: true,
@@ -468,7 +404,7 @@ export const setupProfile = async (req: Request, res: Response) => {
  */
 export const register = async (req: Request, res: Response) => {
   try {
-    const { name, phone, password } = req.body;
+    const { name, phone, password, role } = req.body;
 
     if (!name || name.trim().length === 0) {
       return res.status(400).json({
@@ -491,6 +427,9 @@ export const register = async (req: Request, res: Response) => {
       });
     }
 
+    // Validate role
+    const userRole = role && ['admin', 'employee'].includes(role) ? role : 'employee';
+
     // Check if user already exists
     const existingUser = await query('SELECT id FROM users WHERE mobile = $1', [phone]);
     if (existingUser.rows.length > 0) {
@@ -506,14 +445,14 @@ export const register = async (req: Request, res: Response) => {
     // Create user
     const userResult = await query(
       `INSERT INTO users (id, mobile, name, role, status, password_hash)
-       VALUES (gen_random_uuid(), $1, $2, 'employee', 'active', $3)
+       VALUES (gen_random_uuid(), $1, $2, $3, 'active', $4)
        RETURNING id, mobile, name, role, status, profile_photo_url, bio, created_at`,
-      [phone, name, passwordHash]
+      [phone, name, userRole, passwordHash]
     );
 
     const user = userResult.rows[0];
 
-    // Get user's primary organization (or create default)
+    // Check if user has an organization (only if they were added to one)
     let orgResult = await query(
       `SELECT uo.organization_id 
        FROM user_organizations uo 
@@ -522,52 +461,26 @@ export const register = async (req: Request, res: Response) => {
       [user.id]
     );
 
-    let organizationId: string | undefined;
-    if (orgResult.rows.length === 0) {
-      // Create default organization for user
-      const defaultOrgResult = await query(
-        `INSERT INTO organizations (id, name) 
-         VALUES (gen_random_uuid(), $1)
-         RETURNING id`,
-        [`Org ${phone}`]
-      );
-      organizationId = defaultOrgResult.rows[0].id;
+    // Do NOT create organization automatically
+    // Organization will be created only when admin creates it in settings
+    const organizationId: string | undefined = orgResult.rows.length > 0 
+      ? orgResult.rows[0].organization_id 
+      : undefined;
 
-      await query(
-        `INSERT INTO user_organizations (id, user_id, organization_id)
-         VALUES (gen_random_uuid(), $1, $2)`,
-        [user.id, organizationId]
-      );
-    } else {
-      organizationId = orgResult.rows[0].organization_id;
-    }
-
-    // Generate tokens
+    // Generate tokens (no organizationId in token, stored in local storage on client)
     const token = generateToken({
       userId: user.id,
       mobile: user.mobile,
       role: user.role,
-      organizationId,
     });
 
     const refreshToken = generateRefreshToken({
       userId: user.id,
       mobile: user.mobile,
       role: user.role,
-      organizationId,
     });
 
-    // Create session (required for authentication middleware)
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
-    const deviceId = `default-${user.id}`;
-    const deviceType = 'mobile';
-
-    await query(
-      `INSERT INTO sessions (id, user_id, device_id, device_type, token, refresh_token, expires_at, is_active)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, true)`,
-      [user.id, deviceId, deviceType, token, refreshToken, expiresAt]
-    );
+    // No session storage in database - tokens stored in local storage on client
 
     res.json({
       success: true,
@@ -580,7 +493,7 @@ export const register = async (req: Request, res: Response) => {
         status: user.status,
         profilePhotoUrl: user.profile_photo_url,
         bio: user.bio,
-        organizationId: organizationId,
+        organizationId: organizationId || undefined,
       },
     });
   } catch (error: any) {

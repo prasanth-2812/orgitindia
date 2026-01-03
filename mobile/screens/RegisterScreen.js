@@ -19,6 +19,7 @@ const RegisterScreen = ({ navigation }) => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('employee'); // 'admin' or 'employee'
   const [loading, setLoading] = useState(false);
   const { login: setAuth } = useAuth();
 
@@ -35,7 +36,7 @@ const RegisterScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
-      const result = await register(name, phone, password);
+      const result = await register(name, phone, password, role);
       if (result && result.user) {
         setAuth(result.user);
         Alert.alert('Success', 'Account created successfully!');
@@ -90,6 +91,29 @@ const RegisterScreen = ({ navigation }) => {
           secureTextEntry
           autoCapitalize="none"
         />
+
+        {/* Role Selection */}
+        <View style={styles.roleContainer}>
+          <Text style={styles.roleLabel}>Select Role *</Text>
+          <View style={styles.roleOptions}>
+            <TouchableOpacity
+              style={[styles.roleOption, role === 'employee' && styles.roleOptionActive]}
+              onPress={() => setRole('employee')}
+            >
+              <Text style={[styles.roleOptionText, role === 'employee' && styles.roleOptionTextActive]}>
+                Employee
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.roleOption, role === 'admin' && styles.roleOptionActive]}
+              onPress={() => setRole('admin')}
+            >
+              <Text style={[styles.roleOptionText, role === 'admin' && styles.roleOptionTextActive]}>
+                Admin
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
         <TouchableOpacity
           style={[styles.button, loading && styles.buttonDisabled]}
@@ -200,6 +224,41 @@ const styles = StyleSheet.create({
     color: PRIMARY_COLOR,
     fontSize: 15,
     fontWeight: '600',
+  },
+  roleContainer: {
+    marginBottom: 16,
+  },
+  roleLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: TEXT_PRIMARY,
+    marginBottom: 8,
+  },
+  roleOptions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  roleOption: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: CARD_BG,
+    borderWidth: 2,
+    borderColor: BORDER_COLOR,
+  },
+  roleOptionActive: {
+    backgroundColor: PRIMARY_COLOR,
+    borderColor: PRIMARY_COLOR,
+  },
+  roleOptionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: TEXT_SECONDARY,
+  },
+  roleOptionTextActive: {
+    color: '#FFFFFF',
   },
 });
 

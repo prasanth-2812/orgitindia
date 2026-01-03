@@ -69,6 +69,10 @@ router.post(
       .trim()
       .isLength({ min: 1 })
       .withMessage('Password is required'),
+    body('role')
+      .optional()
+      .isIn(['admin', 'employee'])
+      .withMessage('Role must be either admin or employee'),
   ],
   register
 );

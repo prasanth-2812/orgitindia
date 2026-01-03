@@ -9,11 +9,14 @@ const router = express.Router();
 // Register
 router.post('/register', async (req, res) => {
   try {
-    const { name, phone, password } = req.body;
+    const { name, phone, password, role } = req.body;
 
     if (!name || !phone || !password) {
       return res.status(400).json({ error: 'Name, phone, and password are required' });
     }
+
+    // Validate role (default to 'employee' if not provided or invalid)
+    const userRole = role && ['admin', 'employee'].includes(role) ? role : 'employee';
 
     // Check if user exists
     const existingUser = await pool.query(
@@ -30,8 +33,8 @@ router.post('/register', async (req, res) => {
 
     // Create user
     const result = await pool.query(
-      'INSERT INTO users (name, phone, password_hash) VALUES ($1, $2, $3) RETURNING id, name, phone, created_at',
-      [name, phone, passwordHash]
+      'INSERT INTO users (name, phone, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, phone, role, created_at',
+      [name, phone, passwordHash, userRole]
     );
 
     const user = result.rows[0];
@@ -48,9 +51,18 @@ router.post('/register', async (req, res) => {
       ]
     );
 
+    // Check if user has an organization (only if they were added to one)
+    // Do NOT create organization automatically
+    // Organization will be created only when admin creates it in settings
+    const orgResult = await pool.query(
+      'SELECT organization_id FROM user_organizations WHERE user_id = $1 LIMIT 1',
+      [user.id]
+    );
+    const organizationId = orgResult.rows.length > 0 ? orgResult.rows[0].organization_id : null;
+
     // Generate JWT
     const token = jwt.sign(
-      { userId: user.id, phone: user.phone },
+      { userId: user.id, phone: user.phone, organizationId: organizationId },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -63,8 +75,9 @@ router.post('/register', async (req, res) => {
         user: {
           id: user.id,
           name: user.name,
-          role: user.role, // Assuming DB defaults it, or we should fetch it. But for register it's usually 'employee' default.
+          role: user.role || userRole,
           phone: user.phone,
+          organizationId: organizationId || undefined,
           // Default profile info (can be updated later)
           about: 'Hey there! I am using OrgIT.',
           contact_number: phone,

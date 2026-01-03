@@ -357,8 +357,8 @@ export const createTask = async (req: AuthRequest, res: Response) => {
     // Build INSERT statement - use conversation_id (new schema), not group_id (old schema)
     // The conversation_id is sufficient for task group messages
     // Don't set group_id as it references the old 'groups' table, not 'conversations'
-    let messageColumns = ['conversation_id', 'sender_id', 'content', 'message_type'];
-    let messageValues: any[] = [conversation.id, userId, `Task group auto-created by ${creatorName}`, 'text'];
+    let messageColumns = ['conversation_id', 'sender_id', 'content', 'message_type', 'status'];
+    let messageValues: any[] = [conversation.id, userId, `Task group auto-created by ${creatorName}`, 'text', 'sent'];
     
     // Add sender_organization_id if column exists
     if (hasSenderOrgId && organizationId) {
@@ -369,11 +369,36 @@ export const createTask = async (req: AuthRequest, res: Response) => {
     // Build parameterized query
     const messagePlaceholders = messageValues.map((_, i) => `$${i + 1}`).join(', ');
     
-    await client.query(
+    const messageResult = await client.query(
       `INSERT INTO messages (${messageColumns.join(', ')})
-       VALUES (${messagePlaceholders})`,
+       VALUES (${messagePlaceholders})
+       RETURNING id`,
       messageValues
     );
+    
+    const messageId = messageResult.rows[0].id;
+    
+    // Create message_status entry for the sender
+    // Check if message_status table uses status_at or created_at
+    try {
+      await client.query(
+        `INSERT INTO message_status (message_id, user_id, status, status_at)
+         VALUES ($1, $2, 'sent', NOW())`,
+        [messageId, userId]
+      );
+    } catch (error: any) {
+      // If error is about column name, try with created_at
+      if (error.message && error.message.includes('created_at')) {
+        await client.query(
+          `INSERT INTO message_status (message_id, user_id, status, created_at)
+           VALUES ($1, $2, 'sent', NOW())`,
+          [messageId, userId]
+        );
+      } else {
+        // If message_status table doesn't exist or has different structure, log warning
+        console.warn('[createTask] Could not create message_status entry:', error.message);
+      }
+    }
 
     await client.query('COMMIT');
 

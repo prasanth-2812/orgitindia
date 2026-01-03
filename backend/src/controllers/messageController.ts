@@ -539,6 +539,7 @@ export const getMessagesByConversationId = async (req: Request, res: Response) =
 /**
  * Mark messages as read by conversationId
  * CRITICAL FIX: Works with UUID conversation IDs directly (matching message-backend)
+ * Also updates message_status table and emits socket events
  */
 export const markMessagesAsReadByConversationId = async (req: Request, res: Response) => {
   try {
@@ -562,16 +563,125 @@ export const markMessagesAsReadByConversationId = async (req: Request, res: Resp
       return res.status(403).json({ error: 'Not a member of this conversation' });
     }
 
-    // Mark all unread messages as read (matching message-backend implementation)
-    await query(
-      `UPDATE messages 
-       SET status = 'read' 
-       WHERE conversation_id = $1 
-       AND sender_id != $2 
-       AND status != 'read'
-       AND deleted_at IS NULL`,
-      [conversationId, userId]
+    // Get Socket.IO instance from app (matching conversationController pattern)
+    const io = (req as any).app.get('io');
+
+    // Check if this is a group conversation
+    const convInfoResult = await query(
+      `SELECT is_group, is_task_group FROM conversations WHERE id::text = $1::text`,
+      [conversationId]
     );
+    const isGroup = convInfoResult.rows[0]?.is_group || convInfoResult.rows[0]?.is_task_group || false;
+
+    // For group chats, only update message_status table (per-user status)
+    // For direct chats, update both messages.status and message_status table
+    let unreadMessages;
+    
+    if (isGroup) {
+      // Group chat: Only update message_status table, NOT messages.status
+      // Get all unread messages for this user in this conversation
+      unreadMessages = await query(
+        `SELECT m.id 
+         FROM messages m
+         LEFT JOIN message_status ms ON m.id = ms.message_id AND ms.user_id = $2
+         WHERE m.conversation_id::text = $1::text 
+         AND m.sender_id != $2 
+         AND (ms.status IS NULL OR ms.status != 'read')
+         AND m.is_deleted = false
+         AND m.deleted_at IS NULL`,
+        [conversationId, userId]
+      );
+    } else {
+      // Direct chat: Update both messages.status and message_status table
+      await query(
+        `UPDATE messages 
+         SET status = 'read' 
+         WHERE conversation_id::text = $1::text 
+         AND sender_id != $2 
+         AND status != 'read'
+         AND deleted_at IS NULL`,
+        [conversationId, userId]
+      );
+
+      unreadMessages = await query(
+        `SELECT id FROM messages 
+         WHERE conversation_id::text = $1::text 
+         AND sender_id != $2 
+         AND status = 'read'
+         AND is_deleted = false`,
+        [conversationId, userId]
+      );
+    }
+
+    for (const msg of unreadMessages.rows) {
+      // CRITICAL FIX: message_status table might use 'status_at' instead of 'created_at'
+      try {
+        await query(
+          `INSERT INTO message_status (message_id, user_id, status, status_at)
+           VALUES ($1, $2, 'read', NOW())
+           ON CONFLICT (message_id, user_id) 
+           DO UPDATE SET status = 'read', status_at = NOW()`,
+          [msg.id, userId]
+        );
+      } catch (error: any) {
+        // If error is about column name, try with created_at
+        if (error.message && error.message.includes('created_at')) {
+          await query(
+            `INSERT INTO message_status (message_id, user_id, status, created_at)
+             VALUES ($1, $2, 'read', NOW())
+             ON CONFLICT (message_id, user_id) 
+             DO UPDATE SET status = 'read', updated_at = NOW()`,
+            [msg.id, userId]
+          );
+        } else {
+          // If message_status table doesn't exist or has different structure, skip it
+          console.warn('[markMessagesAsReadByConversationId] Could not update message_status table:', error.message);
+        }
+      }
+    }
+
+    // Emit socket events to notify all members (matching socket handler implementation)
+    if (io) {
+      // Get conversation members to emit to their personal rooms
+      const convMembers = await query(
+        'SELECT user_id FROM conversation_members WHERE conversation_id::text = $1::text',
+        [conversationId]
+      );
+
+      // Emit a single event for all messages marked as read in this conversation
+      io.to(conversationId).emit('conversation_messages_read', {
+        conversationId,
+        status: 'read',
+        userId,
+      });
+
+      // Also emit to each member's personal room
+      for (const member of convMembers.rows) {
+        io.to(`user_${member.user_id}`).emit('conversation_messages_read', {
+          conversationId,
+          status: 'read',
+          userId,
+        });
+      }
+
+      // Also emit individual updates for each message
+      for (const msg of unreadMessages.rows) {
+        io.to(conversationId).emit('message_status_update', {
+          messageId: msg.id,
+          conversationId,
+          status: 'read',
+        });
+
+        // Also emit to each member's personal room
+        for (const member of convMembers.rows) {
+          io.to(`user_${member.user_id}`).emit('message_status_update', {
+            messageId: msg.id,
+            conversationId,
+            status: 'read',
+          });
+        }
+      }
+    }
 
     // Match message-backend response format: { success: true }
     res.json({ success: true });

@@ -25,13 +25,14 @@ const formatPhoneNumber = (phone) => {
   return cleaned.length === 10 ? `+91${cleaned}` : phone;
 };
 
-export const register = async (name, phone, password) => {
+export const register = async (name, phone, password, role = 'employee') => {
   const mobile = formatPhoneNumber(phone);
 
   const response = await api.post('/api/auth/register', {
     name,
     phone: mobile, // Backend register endpoint accepts 'phone' field
     password,
+    role, // Include role in registration
   });
 
   // Backend register returns: { success: true, token, user }

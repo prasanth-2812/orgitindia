@@ -27,6 +27,7 @@ export const TaskGroupChatConversation: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<any>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hasMarkedAsReadRef = useRef<boolean>(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   
@@ -374,12 +375,34 @@ export const TaskGroupChatConversation: React.FC = () => {
     };
   }, [conversationId, user, queryClient]);
 
-  // Mark messages as read when conversation is opened
+  // Mark messages as read when conversation is opened (only once per conversation)
   useEffect(() => {
-    if (conversationId && messages.length > 0) {
-      markAsReadMutation.mutate();
+    if (conversationId && messages.length > 0 && !hasMarkedAsReadRef.current) {
+      const markAsRead = async () => {
+        try {
+          // Call API endpoint
+          await markAsReadMutation.mutateAsync();
+          
+          // Also emit socket event to ensure backend processes it correctly
+          const socket = await waitForSocketConnection();
+          socket.emit('message_read', {
+            conversationId,
+          });
+          
+          hasMarkedAsReadRef.current = true;
+        } catch (error) {
+          console.error('Error marking messages as read:', error);
+        }
+      };
+      
+      markAsRead();
     }
-  }, [conversationId]);
+    
+    // Reset flag when conversation changes
+    return () => {
+      hasMarkedAsReadRef.current = false;
+    };
+  }, [conversationId, messages.length]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
